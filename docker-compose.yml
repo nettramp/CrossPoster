@@ -1,0 +1,55 @@
+version: '3.8'
+
+services:
+  db:
+    image: postgres:13
+    environment:
+      POSTGRES_DB: crossposter
+      POSTGRES_USER: crossposter
+      POSTGRES_PASSWORD: crossposter
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    ports:
+      - "5432:5432"
+  
+  redis:
+    image: redis:6-alpine
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+
+  web:
+    build: .
+    ports:
+      - "8000:8000"
+    depends_on:
+      - db
+      - redis
+    environment:
+      - DATABASE_URL=postgresql://crossposter:crossposter@db:5432/crossposter
+      - REDIS_URL=redis://redis:6379/0
+
+  worker:
+    build: .
+    command: celery -A app.worker worker --loglevel=info
+    depends_on:
+      - db
+      - redis
+    environment:
+      - DATABASE_URL=postgresql://crossposter:crossposter@db:5432/crossposter
+      - REDIS_URL=redis://redis:6379/0
+
+  scheduler:
+    build: .
+    command: python -m app.scheduler
+    depends_on:
+      - db
+      - redis
+    environment:
+      - DATABASE_URL=postgresql://crossposter:crossposter@db:5432/crossposter
+      - REDIS_URL=redis://redis:6379/0
+
+volumes:
+  postgres_data:
+  redis_data:
