@@ -1,9 +1,9 @@
 import os
-from pydantic import BaseSettings
+from pydantic_settings import BaseSettings
 
 class Settings(BaseSettings):
     # Database
-    database_url: str = "postgresql://crossposter:crossposter@localhost:5432/crossposter"
+    database_url: str = "postgresql://crossposter:crossposter@db:5432/crossposter"
     
     # Redis
     redis_url: str = "redis://localhost:6379/0"
@@ -20,6 +20,11 @@ class Settings(BaseSettings):
     instagram_password: str = ""
     pinterest_api_key: str = ""
     youtube_api_key: str = ""
+    
+    # Добавляем переменные для PostgreSQL
+    postgres_db: str = "crossposter"
+    postgres_user: str = "crossposter"
+    postgres_password: str = "crossposter"
     
     class Config:
         env_file = ".env"

@@ -61,8 +61,11 @@ def run_migrations_online():
     and associate a connection with the context.
 
     """
+    from app.core.config import settings
+    print(f"Database URL: {settings.database_url}")
+    
     connectable = engine_from_config(
-        config.get_section(config.config_ini_section),
+        {"sqlalchemy.url": settings.database_url},
         prefix="sqlalchemy.",
         poolclass=pool.NullPool,
     )
