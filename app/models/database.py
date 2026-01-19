@@ -1,9 +1,10 @@
 from sqlalchemy import create_engine
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import sessionmaker
+import os
 
 # URL базы данных будет взят из переменных окружения
-DATABASE_URL = "postgresql://crossposter:crossposter@localhost:5432/crossposter"
+DATABASE_URL = os.getenv("DATABASE_URL", "postgresql://crossposter:crossposter@db:5432/crossposter")
 
 engine = create_engine(DATABASE_URL)
 SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)

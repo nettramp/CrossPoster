@@ -1,4 +1,4 @@
-# Развёртывание CrossPoster
+# Развёртывание CrossPoster на сервере
 
 ## Подготовка Ubuntu 22.04 сервера для запуска CrossPoster
 

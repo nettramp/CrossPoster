@@ -12,7 +12,7 @@ async def test_telegram():
         
         # Отправляем тестовое сообщение
         # Замените @nettramp_test на ваш Telegram канал
-        result = await tg.post_to_channel('@nettramp_test', 'Test message from CrossPoster')
+        result = await tg.post_to_channel('@your_test_channel', 'Test message from CrossPoster')
         print(f"Telegram test result: {result}")
         return result
     except Exception as e:

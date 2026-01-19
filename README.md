@@ -13,9 +13,149 @@
 - Веб-интерфейс админ-панели для управления
 - Статистика постинга
 
+## Требования
+
+- Python 3.9+
+- Docker и Docker Compose (опционально)
+- PostgreSQL (локально или в Docker)
+- Redis (локально или в Docker)
+
+## Установка и запуск
+
+### Локальный запуск
+
+1. Клонируйте репозиторий:
+```bash
+git clone https://github.com/nettramp/CrossPoster.git
+cd CrossPoster
+```
+
+2. Установите зависимости:
+```bash
+pip install -r requirements.txt
+```
+
+3. Создайте файл `.env` на основе `.env.example` и укажите свои API-ключи:
+```bash
+cp .env.example .env
+# Отредактируйте .env файл и добавьте свои API-ключи
+```
+
+4. Запустите миграции базы данных:
+```bash
+alembic upgrade head
+```
+
+5. Запустите приложение:
+```bash
+uvicorn app.main:app --host 0.0.0.0 --port 8000
+```
+
+### Запуск с помощью Docker Compose
+
+1. Клонируйте репозиторий:
+```bash
+git clone https://github.com/nettramp/CrossPoster.git
+cd CrossPoster
+```
+
+2. Создайте файл `.env` на основе `.env.example` и укажите свои API-ключи:
+```bash
+cp .env.example .env
+# Отредактируйте .env файл и добавьте свои API-ключи
+```
+
+3. Запустите приложение:
+```bash
+docker-compose up -d
+```
+
+Приложение будет доступно по адресу `http://localhost:8000`
+
+## Безопасность
+
+- Все API-ключи и секреты должны быть указаны в файле `.env`
+- Не храните чувствительные данные в коде
+- Файл `.env` добавлен в `.gitignore` и не должен попадать в репозиторий
+
 ## Технологии:
 - Python 3.9+
 - FastAPI для веб-интерфейса
 - Celery для асинхронной обработки задач
 - Redis как брокер сообщений
 - PostgreSQL для хранения данных
+- Docker & Docker Compose для контейнеризации
+
+## Архитектура
+
+Проект разделен на следующие основные компоненты:
+
+- `app/main.py` - основное приложение FastAPI
+- `app/api/` - API эндпоинты
+- `app/social/` - клиенты для работы с социальными сетями
+- `app/models/` - модели базы данных
+- `app/schemas/` - схемы Pydantic для валидации
+- `app/tasks/` - асинхронные задачи Celery
+- `app/scheduler.py` - планировщик задач
+- `app/worker.py` - воркер Celery
+
+## API
+
+После запуска приложения документация к API будет доступна по адресу:
+- `http://localhost:8000/docs` - интерактивная документация (Swagger UI)
+- `http://localhost:8000/redoc` - документация (ReDoc)
+- `http://localhost:8000/openapi.json` - спецификация OpenAPI
+
+## Настройка социальных сетей
+
+Для работы с каждой социальной сетью необходимо получить соответствующие API-ключи:
+
+### ВКонтакте
+- Создайте standalone-приложение
+- Получите токен доступа с необходимыми правами
+
+### Telegram
+- Создайте бота через @BotFather
+- Получите токен бота
+
+### Instagram
+- Используется библиотека instagrapi (неофициальный API)
+- Требуется логин и пароль от аккаунта
+
+### Pinterest
+- Зарегистрируйтесь как разработчик
+- Создайте приложение и получите API-ключ
+
+### YouTube
+- Создайте проект в Google Cloud Console
+- Включите YouTube Data API v3
+- Получите API-ключ
+
+## Запуск воркера и планировщика
+
+Если вы используете локальный запуск, вам также нужно запустить:
+
+- Воркер Celery для обработки задач:
+```bash
+celery -A app.worker worker --loglevel=info
+```
+
+- Планировщик задач:
+```bash
+python -m app.scheduler
+```
+
+## Тестирование
+
+Для запуска тестов:
+```bash
+python -m pytest
+```
+
+## Вклад в проект
+
+1. Сделайте форк репозитория
+2. Создайте ветку для новой фичи (`git checkout -b feature/amazing-feature`)
+3. Зафиксируйте изменения (`git commit -m 'Add some amazing feature'`)
+4. Отправьте изменения в репозиторий (`git push origin feature/amazing-feature`)
+5. Создайте Pull Request

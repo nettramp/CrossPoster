@@ -1,5 +1,6 @@
 import os
-from pydantic_settings import BaseSettings
+# Используем pydantic v1 для совместимости с текущими зависимостями
+from pydantic import BaseSettings
 
 class Settings(BaseSettings):
     # Database
