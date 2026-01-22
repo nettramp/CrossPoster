@@ -1,0 +1,421 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Управление аккаунтами - CrossPoster</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <style>
+        .card {
+            box-shadow: 0 0.125rem 0.25rem rgba(0, 0, 0, 0.075);
+            border: 1px solid rgba(0, 0, 0, 0.125);
+        }
+        .social-card {
+            transition: transform 0.2s;
+        }
+        .social-card:hover {
+            transform: translateY(-5px);
+        }
+        .connected { border-left: 4px solid #28a745; }
+        .disconnected { border-left: 4px solid #dc3545; }
+    </style>
+</head>
+<body>
+    <nav class="navbar navbar-expand-lg navbar-dark bg-primary">
+        <div class="container">
+            <a class="navbar-brand" href="/">CrossPoster</a>
+            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
+                <span class="navbar-toggler-icon"></span>
+            </button>
+            <div class="collapse navbar-collapse" id="navbarNav">
+                <ul class="navbar-nav ms-auto">
+                    <li class="nav-item">
+                        <a class="nav-link" href="/">Главная</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link active" href="/accounts">Аккаунты</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="/settings">Настройки</a>
+                    </li>
+                </ul>
+            </div>
+        </div>
+    </nav>
+
+    <div class="container mt-4">
+        <div class="row">
+            <div class="col-md-12">
+                <h1 class="mb-4">Управление аккаунтами</h1>
+                <p class="lead">Подключите аккаунты социальных сетей для использования кросспостинга</p>
+            </div>
+        </div>
+
+        <div class="row">
+            <div class="col-md-4 mb-4">
+                <div class="card social-card connected">
+                    <div class="card-body text-center">
+                        <div class="mb-3">
+                            <i class="fab fa-vk fa-3x" style="color: #4680C2;"></i>
+                        </div>
+                        <h5 class="card-title">ВКонтакте</h5>
+                        <p class="card-text">Подключите аккаунт ВКонтакте для публикации постов</p>
+                        <button class="btn btn-outline-primary" data-bs-toggle="modal" data-bs-target="#vkModal">
+                            Настроить
+                        </button>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="col-md-4 mb-4">
+                <div class="card social-card disconnected">
+                    <div class="card-body text-center">
+                        <div class="mb-3">
+                            <i class="fab fa-telegram fa-3x" style="color: #0088CC;"></i>
+                        </div>
+                        <h5 class="card-title">Telegram</h5>
+                        <p class="card-text">Подключите Telegram-бота для публикации постов</p>
+                        <button class="btn btn-outline-secondary" data-bs-toggle="modal" data-bs-target="#telegramModal" disabled>
+                            Настроить
+                        </button>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="col-md-4 mb-4">
+                <div class="card social-card disconnected">
+                    <div class="card-body text-center">
+                        <div class="mb-3">
+                            <i class="fab fa-instagram fa-3x" style="background: linear-gradient(45deg, #f09433 0%,#e6683c 25%,#dc2743 50%,#cc2366 75%,#bc1888 100%); -webkit-background-clip: text; -webkit-text-fill-color: transparent;"></i>
+                        </div>
+                        <h5 class="card-title">Instagram</h5>
+                        <p class="card-text">Подключите аккаунт Instagram для публикации постов</p>
+                        <button class="btn btn-outline-secondary" data-bs-toggle="modal" data-bs-target="#instagramModal" disabled>
+                            Настроить
+                        </button>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="col-md-4 mb-4">
+                <div class="card social-card disconnected">
+                    <div class="card-body text-center">
+                        <div class="mb-3">
+                            <i class="fab fa-pinterest fa-3x" style="color: #bd081c;"></i>
+                        </div>
+                        <h5 class="card-title">Pinterest</h5>
+                        <p class="card-text">Подключите аккаунт Pinterest для публикации постов</p>
+                        <button class="btn btn-outline-secondary" data-bs-toggle="modal" data-bs-target="#pinterestModal" disabled>
+                            Настроить
+                        </button>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="col-md-4 mb-4">
+                <div class="card social-card disconnected">
+                    <div class="card-body text-center">
+                        <div class="mb-3">
+                            <i class="fab fa-youtube fa-3x" style="color: #ff0000;"></i>
+                        </div>
+                        <h5 class="card-title">YouTube</h5>
+                        <p class="card-text">Подключите аккаунт YouTube для публикации коротких видео</p>
+                        <button class="btn btn-outline-secondary" data-bs-toggle="modal" data-bs-target="#youtubeModal" disabled>
+                            Настроить
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Modal для ВКонтакте -->
+        <div class="modal fade" id="vkModal" tabindex="-1" aria-labelledby="vkModalLabel" aria-hidden="true">
+            <div class="modal-dialog">
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <h5 class="modal-title" id="vkModalLabel">Настройка ВКонтакте</h5>
+                        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                    </div>
+                    <form id="vk-form">
+                        <div class="modal-body">
+                            <div class="mb-3">
+                                <label for="vk-token" class="form-label">API-токен ВКонтакте</label>
+                                <input type="password" class="form-control" id="vk-token" placeholder="Введите ваш VK API токен">
+                                <div class="form-text">
+                                    Вы можете получить токен в настройках вашего VK приложения
+                                </div>
+                            </div>
+                            <div class="mb-3">
+                                <label for="vk-group-id" class="form-label">ID группы (опционально)</label>
+                                <input type="text" class="form-control" id="vk-group-id" placeholder="Введите ID группы для публикации">
+                                <div class="form-text">
+                                    Если хотите публиковать в группу, укажите её ID
+                                </div>
+                            </div>
+                        </div>
+                        <div class="modal-footer">
+                            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Отмена</button>
+                            <button type="submit" class="btn btn-primary">Сохранить</button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Modal для Telegram -->
+        <div class="modal fade" id="telegramModal" tabindex="-1" aria-labelledby="telegramModalLabel" aria-hidden="true">
+            <div class="modal-dialog">
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <h5 class="modal-title" id="telegramModalLabel">Настройка Telegram</h5>
+                        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                    </div>
+                    <form id="telegram-form">
+                        <div class="modal-body">
+                            <div class="mb-3">
+                                <label for="telegram-token" class="form-label">Токен Telegram-бота</label>
+                                <input type="password" class="form-control" id="telegram-token" placeholder="Введите токен вашего Telegram-бота">
+                                <div class="form-text">
+                                    Получите токен у @BotFather в Telegram
+                                </div>
+                            </div>
+                            <div class="mb-3">
+                                <label for="telegram-channel" class="form-label">Канал для публикации</label>
+                                <input type="text" class="form-control" id="telegram-channel" placeholder="@channel_name или -1001234567890">
+                                <div class="form-text">
+                                    Укажите имя канала (например @mychannel) или числовой ID
+                                </div>
+                            </div>
+                        </div>
+                        <div class="modal-footer">
+                            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Отмена</button>
+                            <button type="submit" class="btn btn-primary">Сохранить</button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Modal для Instagram -->
+        <div class="modal fade" id="instagramModal" tabindex="-1" aria-labelledby="instagramModalLabel" aria-hidden="true">
+            <div class="modal-dialog">
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <h5 class="modal-title" id="instagramModalLabel">Настройка Instagram</h5>
+                        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                    </div>
+                    <form id="instagram-form">
+                        <div class="modal-body">
+                            <div class="mb-3">
+                                <label for="instagram-username" class="form-label">Логин Instagram</label>
+                                <input type="text" class="form-control" id="instagram-username" placeholder="Введите ваш Instagram логин">
+                            </div>
+                            <div class="mb-3">
+                                <label for="instagram-password" class="form-label">Пароль Instagram</label>
+                                <input type="password" class="form-control" id="instagram-password" placeholder="Введите ваш Instagram пароль">
+                                <div class="form-text">
+                                    Пароль будет зашифрован и безопасно сохранен
+                                </div>
+                            </div>
+                        </div>
+                        <div class="modal-footer">
+                            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Отмена</button>
+                            <button type="submit" class="btn btn-primary">Сохранить</button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Modal для Pinterest -->
+        <div class="modal fade" id="pinterestModal" tabindex="-1" aria-labelledby="pinterestModalLabel" aria-hidden="true">
+            <div class="modal-dialog">
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <h5 class="modal-title" id="pinterestModalLabel">Настройка Pinterest</h5>
+                        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                    </div>
+                    <form id="pinterest-form">
+                        <div class="modal-body">
+                            <div class="mb-3">
+                                <label for="pinterest-token" class="form-label">API-ключ Pinterest</label>
+                                <input type="password" class="form-control" id="pinterest-token" placeholder="Введите ваш Pinterest API ключ">
+                                <div class="form-text">
+                                    Получите API ключ в Pinterest Developer Portal
+                                </div>
+                            </div>
+                            <div class="mb-3">
+                                <label for="pinterest-board" class="form-label">Доска для публикации</label>
+                                <input type="text" class="form-control" id="pinterest-board" placeholder="username/board_name">
+                                <div class="form-text">
+                                    Укажите доску в формате username/board_name
+                                </div>
+                            </div>
+                        </div>
+                        <div class="modal-footer">
+                            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Отмена</button>
+                            <button type="submit" class="btn btn-primary">Сохранить</button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Modal для YouTube -->
+        <div class="modal fade" id="youtubeModal" tabindex="-1" aria-labelledby="youtubeModalLabel" aria-hidden="true">
+            <div class="modal-dialog">
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <h5 class="modal-title" id="youtubeModalLabel">Настройка YouTube</h5>
+                        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                    </div>
+                    <form id="youtube-form">
+                        <div class="modal-body">
+                            <div class="mb-3">
+                                <label for="youtube-token" class="form-label">OAuth токен YouTube</label>
+                                <input type="password" class="form-control" id="youtube-token" placeholder="Введите ваш YouTube OAuth токен">
+                                <div class="form-text">
+                                    Получите OAuth токен в Google Developer Console
+                                </div>
+                            </div>
+                            <div class="mb-3">
+                                <label for="youtube-channel" class="form-label">ID канала</label>
+                                <input type="text" class="form-control" id="youtube-channel" placeholder="Введите ID вашего YouTube канала">
+                            </div>
+                        </div>
+                        <div class="modal-footer">
+                            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Отмена</button>
+                            <button type="submit" class="btn btn-primary">Сохранить</button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <footer class="bg-light mt-5 py-4">
+        <div class="container">
+            <div class="row">
+                <div class="col-md-12 text-center">
+                    <p class="mb-0">&copy; 2026 CrossPoster. Платформа автоматического кросспостинга.</p>
+                </div>
+            </div>
+        </div>
+    </footer>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/js/all.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        // Обработка формы ВКонтакте
+        document.getElementById('vk-form').addEventListener('submit', function(e) {
+            e.preventDefault();
+            
+            const token = document.getElementById('vk-token').value;
+            const groupId = document.getElementById('vk-group-id').value;
+            
+            const accountData = {
+                platform: 'vk',
+                account_name: 'VK Account',
+                access_token: token
+            };
+            
+            if (groupId) {
+                accountData.settings = { group_id: groupId };
+            }
+            
+            saveSocialAccount(accountData);
+        });
+        
+        // Обработка формы Telegram
+        document.getElementById('telegram-form').addEventListener('submit', function(e) {
+            e.preventDefault();
+            
+            const token = document.getElementById('telegram-token').value;
+            const channel = document.getElementById('telegram-channel').value;
+            
+            const accountData = {
+                platform: 'telegram',
+                account_name: 'Telegram Channel',
+                access_token: token,
+                settings: { channel: channel }
+            };
+            
+            saveSocialAccount(accountData);
+        });
+        
+        // Обработка формы Instagram
+        document.getElementById('instagram-form').addEventListener('submit', function(e) {
+            e.preventDefault();
+            
+            const username = document.getElementById('instagram-username').value;
+            const password = document.getElementById('instagram-password').value;
+            
+            const accountData = {
+                platform: 'instagram',
+                account_name: username,
+                access_token: btoa(username + ':' + password) // временно кодируем, на сервере будет шифрование
+            };
+            
+            saveSocialAccount(accountData);
+        });
+        
+        // Обработка формы Pinterest
+        document.getElementById('pinterest-form').addEventListener('submit', function(e) {
+            e.preventDefault();
+            
+            const token = document.getElementById('pinterest-token').value;
+            const board = document.getElementById('pinterest-board').value;
+            
+            const accountData = {
+                platform: 'pinterest',
+                account_name: 'Pinterest Board',
+                access_token: token,
+                settings: { board: board }
+            };
+            
+            saveSocialAccount(accountData);
+        });
+        
+        // Обработка формы YouTube
+        document.getElementById('youtube-form').addEventListener('submit', function(e) {
+            e.preventDefault();
+            
+            const token = document.getElementById('youtube-token').value;
+            const channel = document.getElementById('youtube-channel').value;
+            
+            const accountData = {
+                platform: 'youtube',
+                account_name: 'YouTube Channel',
+                access_token: token,
+                settings: { channel_id: channel }
+            };
+            
+            saveSocialAccount(accountData);
+        });
+        
+        // Функция сохранения аккаунта
+        function saveSocialAccount(accountData) {
+            fetch('/api/v1/social-accounts/', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify(accountData)
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.id) {
+                    alert('Аккаунт успешно сохранен!');
+                    location.reload(); // Обновляем страницу для отображения изменений
+                } else {
+                    alert('Ошибка при сохранении аккаунта: ' + (data.detail || 'Неизвестная ошибка'));
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                alert('Произошла ошибка при сохранении аккаунта');
+            });
+        }
+    </script>
+</body>
+</html>

@@ -1,0 +1,287 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CrossPoster - Платформа кросспостинга</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <style>
+        body {
+            background-color: #f8f9fa;
+        }
+        .card {
+            box-shadow: 0 0.125rem 0.25rem rgba(0, 0, 0, 0.075);
+            border: 1px solid rgba(0, 0, 0, 0.125);
+        }
+        .social-icon {
+            width: 48px;
+            height: 48px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 50%;
+            color: white;
+            font-size: 1.5rem;
+        }
+        .vk { background-color: #4680C2; }
+        .telegram { background-color: #0088CC; }
+        .instagram { background: linear-gradient(45deg, #f09433 0%,#e6683c 25%,#dc2743 50%,#cc2366 75%,#bc1888 100%); }
+        .pinterest { background-color: #bd081c; }
+        .youtube { background-color: #ff0000; }
+        .connected { opacity: 1; }
+        .disconnected { opacity: 0.5; }
+    </style>
+</head>
+<body>
+    <nav class="navbar navbar-expand-lg navbar-dark bg-primary">
+        <div class="container">
+            <a class="navbar-brand" href="/">CrossPoster</a>
+            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
+                <span class="navbar-toggler-icon"></span>
+            </button>
+            <div class="collapse navbar-collapse" id="navbarNav">
+                <ul class="navbar-nav ms-auto">
+                    <li class="nav-item">
+                        <a class="nav-link active" href="/">Главная</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="/accounts">Аккаунты</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="/settings">Настройки</a>
+                    </li>
+                </ul>
+            </div>
+        </div>
+    </nav>
+
+    <div class="container mt-4">
+        <div class="row">
+            <div class="col-md-12">
+                <h1 class="mb-4">Добро пожаловать в CrossPoster</h1>
+                <p class="lead">Платформа для автоматического кросспостинга между социальными сетями</p>
+            </div>
+        </div>
+
+        <div class="row">
+            <div class="col-md-6 mb-4">
+                <div class="card">
+                    <div class="card-header">
+                        <h5 class="mb-0">Подключенные аккаунты</h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="row text-center">
+                            <div class="col-4 mb-3">
+                                <div id="vk-status" class="social-icon disconnected mx-auto mb-2 vk">
+                                    <i class="fab fa-vk"></i>
+                                </div>
+                                <h6>VK</h6>
+                                <small class="text-muted">Не подключен</small>
+                            </div>
+                            <div class="col-4 mb-3">
+                                <div id="tg-status" class="social-icon disconnected mx-auto mb-2 telegram">
+                                    <i class="fab fa-telegram"></i>
+                                </div>
+                                <h6>Telegram</h6>
+                                <small class="text-muted">Не подключен</small>
+                            </div>
+                            <div class="col-4 mb-3">
+                                <div id="ig-status" class="social-icon disconnected mx-auto mb-2 instagram">
+                                    <i class="fab fa-instagram"></i>
+                                </div>
+                                <h6>Instagram</h6>
+                                <small class="text-muted">Не подключен</small>
+                            </div>
+                            <div class="col-4 mb-3">
+                                <div id="pin-status" class="social-icon disconnected mx-auto mb-2 pinterest">
+                                    <i class="fab fa-pinterest"></i>
+                                </div>
+                                <h6>Pinterest</h6>
+                                <small class="text-muted">Не подключен</small>
+                            </div>
+                            <div class="col-4 mb-3">
+                                <div id="yt-status" class="social-icon disconnected mx-auto mb-2 youtube">
+                                    <i class="fab fa-youtube"></i>
+                                </div>
+                                <h6>YouTube</h6>
+                                <small class="text-muted">Не подключен</small>
+                            </div>
+                        </div>
+                        <div class="mt-3">
+                            <button class="btn btn-primary" onclick="location.href='/accounts'">Подключить аккаунты</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="col-md-6 mb-4">
+                <div class="card">
+                    <div class="card-header">
+                        <h5 class="mb-0">Тестовый репост</h5>
+                    </div>
+                    <div class="card-body">
+                        <form id="test-post-form">
+                            <div class="mb-3">
+                                <label for="test-content" class="form-label">Текст поста</label>
+                                <textarea class="form-control" id="test-content" rows="3" placeholder="Введите текст тестового поста..."></textarea>
+                            </div>
+                            <div class="mb-3">
+                                <label for="media-upload" class="form-label">Медиа файлы</label>
+                                <input type="file" class="form-control" id="media-upload" accept="image/*,video/*" multiple>
+                            </div>
+                            <button type="submit" class="btn btn-success">Отправить тестовый репост</button>
+                        </form>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="row">
+            <div class="col-md-12">
+                <div class="card">
+                    <div class="card-header">
+                        <h5 class="mb-0">Статистика</h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="row text-center">
+                            <div class="col-md-3 mb-3">
+                                <div class="card bg-light">
+                                    <div class="card-body">
+                                        <h3 id="total-posts">0</h3>
+                                        <p class="card-text">Всего постов</p>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="col-md-3 mb-3">
+                                <div class="card bg-light">
+                                    <div class="card-body">
+                                        <h3 id="reposts-count">0</h3>
+                                        <p class="card-text">Репостов</p>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="col-md-3 mb-3">
+                                <div class="card bg-light">
+                                    <div class="card-body">
+                                        <h3 id="active-accounts">0</h3>
+                                        <p class="card-text">Активных аккаунтов</p>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="col-md-3 mb-3">
+                                <div class="card bg-light">
+                                    <div class="card-body">
+                                        <h3 id="last-sync">-</h3>
+                                        <p class="card-text">Последняя синхронизация</p>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <footer class="bg-light mt-5 py-4">
+        <div class="container">
+            <div class="row">
+                <div class="col-md-12 text-center">
+                    <p class="mb-0">&copy; 2026 CrossPoster. Платформа автоматического кросспостинга.</p>
+                </div>
+            </div>
+        </div>
+    </footer>
+
+    <!-- Font Awesome for icons -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/js/all.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        // Загрузка данных при открытии страницы
+        document.addEventListener('DOMContentLoaded', function() {
+            loadStats();
+            checkConnections();
+        });
+
+        // Отправка тестового поста
+        document.getElementById('test-post-form').addEventListener('submit', function(e) {
+            e.preventDefault();
+            
+            const content = document.getElementById('test-content').value;
+            const mediaInput = document.getElementById('media-upload');
+            
+            if (!content.trim()) {
+                alert('Пожалуйста, введите текст поста');
+                return;
+            }
+
+            // Подготовка данных для отправки
+            const formData = new FormData();
+            formData.append('content', content);
+            
+            if (mediaInput.files.length > 0) {
+                for (let i = 0; i < mediaInput.files.length; i++) {
+                    formData.append('media', mediaInput.files[i]);
+                }
+            }
+
+            // Отправка запроса
+            fetch('/api/v1/posts/test', {
+                method: 'POST',
+                body: formData
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    alert('Тестовый пост успешно отправлен во все подключенные социальные сети!');
+                    document.getElementById('test-content').value = '';
+                    document.getElementById('media-upload').value = '';
+                } else {
+                    alert('Ошибка при отправке тестового поста: ' + data.message);
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                alert('Произошла ошибка при отправке тестового поста');
+            });
+        });
+
+        // Загрузка статистики
+        function loadStats() {
+            fetch('/api/v1/statistics/summary')
+                .then(response => response.json())
+                .then(data => {
+                    document.getElementById('total-posts').textContent = data.total_posts || 0;
+                    document.getElementById('reposts-count').textContent = data.reposts_count || 0;
+                    document.getElementById('active-accounts').textContent = data.active_accounts || 0;
+                    document.getElementById('last-sync').textContent = data.last_sync || '-';
+                })
+                .catch(error => console.error('Error loading stats:', error));
+        }
+
+        // Проверка подключения аккаунтов
+        function checkConnections() {
+            fetch('/api/v1/social-accounts/status')
+                .then(response => response.json())
+                .then(accounts => {
+                    accounts.forEach(account => {
+                        const statusElement = document.getElementById(`${account.platform.toLowerCase()}-status`);
+                        if (statusElement) {
+                            statusElement.classList.remove('disconnected');
+                            statusElement.classList.add('connected');
+                            
+                            // Обновляем текст статуса
+                            const parentDiv = statusElement.parentElement;
+                            const statusText = parentDiv.querySelector('small');
+                            if (statusText) {
+                                statusText.textContent = 'Подключен';
+                                statusText.className = 'text-success';
+                            }
+                        }
+                    });
+                })
+                .catch(error => console.error('Error checking connections:', error));
+        }
+    </script>
+</body>
+</html>

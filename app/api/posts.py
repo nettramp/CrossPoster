@@ -50,3 +50,12 @@ def update_post(post_id: int, post: PostCreate, db: Session = Depends(get_db)):
     db.commit()
     db.refresh(db_post)
     return db_post
+
+@router.post("/test")
+def send_test_post(content: str, media: List[str] = None):
+    """
+    Отправить тестовый пост во все подключенные социальные сети
+    """
+    # Этот эндпоинт будет переопределен в админ-маршрутах
+    # Здесь оставляем заглушку для совместимости
+    return {"success": True, "message": "Test endpoint will be handled by admin router"}

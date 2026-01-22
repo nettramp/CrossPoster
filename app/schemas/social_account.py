@@ -11,17 +11,20 @@ class SocialAccountCreate(SocialAccountBase):
     access_token: str
     refresh_token: Optional[str] = None
     token_expires_at: Optional[datetime] = None
+    settings: Optional[dict] = None
 
 class SocialAccountUpdate(SocialAccountBase):
     access_token: Optional[str] = None
     refresh_token: Optional[str] = None
     token_expires_at: Optional[datetime] = None
+    settings: Optional[dict] = None
 
 class SocialAccount(SocialAccountBase):
     id: int
     user_id: int
     created_at: datetime
     updated_at: Optional[datetime]
+    settings: Optional[dict] = None
 
     class Config:
         orm_mode = True

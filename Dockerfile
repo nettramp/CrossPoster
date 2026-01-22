@@ -21,4 +21,8 @@ RUN mkdir -p alembic/versions
 
 EXPOSE 8000
 
-CMD ["sh", "-c", "alembic upgrade head && uvicorn app.main:app --host 0.0.0.0 --port 8000"]
+# Копируем скрипт ожидания
+COPY wait-for-db.sh /usr/local/bin/wait-for-db.sh
+RUN chmod +x /usr/local/bin/wait-for-db.sh
+
+CMD ["sh", "-c", "wait-for-db.sh alembic upgrade head && uvicorn app.main:app --host 0.0.0.0 --port 8000"]

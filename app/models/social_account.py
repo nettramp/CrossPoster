@@ -1,4 +1,5 @@
 from sqlalchemy import Column, Integer, String, DateTime, Boolean, ForeignKey
+from sqlalchemy.dialects.postgresql import JSON
 from sqlalchemy.sql import func
 from app.models.database import Base
 
@@ -10,6 +11,7 @@ class SocialAccount(Base):
     platform = Column(String, index=True)  # vk, telegram, instagram, pinterest, youtube
     account_name = Column(String)
     access_token = Column(String)
+    settings = Column(JSON, nullable=True)
     refresh_token = Column(String, nullable=True)
     token_expires_at = Column(DateTime, nullable=True)
     is_active = Column(Boolean, default=True)
