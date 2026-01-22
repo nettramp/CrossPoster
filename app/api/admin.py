@@ -4,10 +4,10 @@ from typing import List, Optional
 from datetime import datetime
 import json
 
-from app.models.social_account import SocialAccount
-from app.models.post import Post
-from app.models.statistics import Statistics
-from app.schemas.social_account import SocialAccountCreate, SocialAccount as SocialAccountSchema
+from app.models.social_account import SocialAccount as SocialAccountModel
+from app.models.post import Post as PostModel
+from app.models.statistics import Statistics as StatisticsModel
+from app.schemas.social_account import SocialAccountCreate, SocialAccount as SocialAccountSchema, SocialAccountPublic
 from app.schemas.post import PostCreate, Post as PostSchema
 from app.schemas.statistics import StatisticsCreate, Statistics as StatisticsSchema
 from app.database import SessionLocal, engine
@@ -30,7 +30,7 @@ async def get_connected_accounts_status(db=Depends(get_db)):
     """
     Получить статус подключения ко всем аккаунтам социальных сетей
     """
-    accounts = db.query(SocialAccount).all()
+    accounts = db.query(SocialAccountModel).all()
     result = []
     
     for account in accounts:
@@ -56,7 +56,7 @@ async def send_test_post(
     """
     try:
         # Получаем все активные аккаунты
-        active_accounts = db.query(SocialAccount).filter(SocialAccount.is_active == True).all()
+        active_accounts = db.query(SocialAccountModel).filter(SocialAccountModel.is_active == True).all()
         
         if not active_accounts:
             raise HTTPException(status_code=400, detail="Нет подключенных аккаунтов")
@@ -120,11 +120,11 @@ async def get_summary_statistics(db=Depends(get_db)):
     """
     Получить сводную статистику
     """
-    total_posts = db.query(Post).count()
-    active_accounts = db.query(SocialAccount).filter(SocialAccount.is_active == True).count()
+    total_posts = db.query(PostModel).count()
+    active_accounts = db.query(SocialAccountModel).filter(SocialAccountModel.is_active == True).count()
     
     # Получаем последнюю запись статистики
-    last_stat = db.query(Statistics).order_by(Statistics.created_at.desc()).first()
+    last_stat = db.query(StatisticsModel).order_by(StatisticsModel.created_at.desc()).first()
     
     return {
         "total_posts": total_posts,
@@ -133,22 +133,22 @@ async def get_summary_statistics(db=Depends(get_db)):
         "last_sync": last_stat.created_at.isoformat() if last_stat else "-"
     }
 
-@router.post("/social-accounts/")
+@router.post("/social-accounts/", response_model=SocialAccountPublic)
 async def create_or_update_social_account(account: SocialAccountCreate, db=Depends(get_db)):
     """
     Создать или обновить аккаунт социальной сети
     """
     try:
         # Проверяем, существует ли уже аккаунт для этой платформы у пользователя
-        existing_account = db.query(SocialAccount).filter(
-            SocialAccount.user_id == account.user_id,
-            SocialAccount.platform == account.platform
+        existing_account = db.query(SocialAccountModel).filter(
+            SocialAccountModel.user_id == (account.user_id or 1),
+            SocialAccountModel.platform == account.platform
         ).first()
         
         if existing_account:
             # Обновляем существующий аккаунт
             existing_account.account_name = account.account_name
-            existing_account.access_token = account.access_token
+            existing_account.access_token = account.access_token  # будет зашифрован автоматически через модель
             existing_account.is_active = account.is_active
             existing_account.settings = account.settings
             db.commit()
@@ -156,12 +156,12 @@ async def create_or_update_social_account(account: SocialAccountCreate, db=Depen
             return existing_account
         else:
             # Создаем новый аккаунт
-            db_account = SocialAccount(
+            db_account = SocialAccountModel(
                 platform=account.platform,
                 account_name=account.account_name,
-                access_token=account.access_token,
+                access_token=account.access_token,  # будет зашифрован автоматически через модель
                 is_active=account.is_active or True,
-                user_id=account.user_id,
+                user_id=account.user_id or 1,  # по умолчанию первый пользователь
                 settings=account.settings
             )
             db.add(db_account)
@@ -171,12 +171,12 @@ async def create_or_update_social_account(account: SocialAccountCreate, db=Depen
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Ошибка при сохранении аккаунта: {str(e)}")
 
-@router.get("/social-accounts/status")
+@router.get("/social-accounts/status", response_model=List[SocialAccountPublic])
 async def get_all_accounts_status(db=Depends(get_db)):
     """
     Получить статус всех аккаунтов
     """
-    accounts = db.query(SocialAccount).all()
+    accounts = db.query(SocialAccountModel).all()
     result = []
     
     for account in accounts:
