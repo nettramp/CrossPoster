@@ -177,6 +177,7 @@ def send_test_post_to_all_platforms(post_data: dict, accounts_data: list):
                 results[f"youtube_{account['id']}"] = {"success": True, "result": result}
                 
         except Exception as e:
+            platform = account.get('platform', 'unknown')
             results[f"{platform}_{account['id']}"] = {"success": False, "error": str(e)}
     
     return {"status": "complete", "results": results}

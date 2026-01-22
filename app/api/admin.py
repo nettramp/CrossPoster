@@ -62,7 +62,7 @@ async def send_test_post(
             raise HTTPException(status_code=400, detail="Нет подключенных аккаунтов")
         
         # Создаем тестовый пост
-        test_post = Post(
+        test_post = PostModel(
             post_id=f"test_{datetime.utcnow().timestamp()}",
             content=content,
             media_urls=json.dumps(media) if media else None,
@@ -96,7 +96,7 @@ async def send_test_post(
         task_result = send_test_post_to_all_platforms.delay(post_data, accounts_data)
         
         # Сохраняем статистику
-        stat = Statistics(
+        stat = StatisticsModel(
             date=datetime.utcnow().date(),
             posts_count=1,
             reposts_count=len(active_accounts),

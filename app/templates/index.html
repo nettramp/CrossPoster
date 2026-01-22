@@ -217,7 +217,6 @@
 
             // Подготовка данных для отправки
             const formData = new FormData();
-            formData.append('content', content);
             
             if (mediaInput.files.length > 0) {
                 for (let i = 0; i < mediaInput.files.length; i++) {
@@ -226,7 +225,7 @@
             }
 
             // Отправка запроса
-            fetch('/api/v1/posts/test', {
+            fetch(`/api/v1/admin/admin/posts/test?content=${encodeURIComponent(content)}`, {
                 method: 'POST',
                 body: formData
             })
@@ -248,7 +247,7 @@
 
         // Загрузка статистики
         function loadStats() {
-            fetch('/api/v1/statistics/summary')
+            fetch('/api/v1/admin/admin/statistics/summary')
                 .then(response => response.json())
                 .then(data => {
                     document.getElementById('total-posts').textContent = data.total_posts || 0;
@@ -261,7 +260,7 @@
 
         // Проверка подключения аккаунтов
         function checkConnections() {
-            fetch('/api/v1/social-accounts/status')
+            fetch('/api/v1/admin/admin/social-accounts/status')
                 .then(response => response.json())
                 .then(accounts => {
                     accounts.forEach(account => {
