@@ -19,6 +19,7 @@ class SocialAccountUpdate(SocialAccountBase):
     refresh_token: Optional[str] = None
     token_expires_at: Optional[datetime] = None
     settings: Optional[dict] = None
+    user_id: Optional[int] = None
 
 class SocialAccountPublic(SocialAccountBase):
     id: int
@@ -43,12 +44,13 @@ class SocialAccountPublic(SocialAccountBase):
         }
 
 
-class SocialAccount(SocialAccountCreate):
-    id: int
-    user_id: int
-    created_at: datetime
-    updated_at: Optional[datetime]
-    settings: Optional[dict] = None
-
-    class Config:
-        orm_mode = True
+# Удаляем дублирующий класс SocialAccount, оставляем только SocialAccountPublic
+# class SocialAccount(SocialAccountCreate):
+#     id: int
+#     user_id: int
+#     created_at: datetime
+#     updated_at: Optional[datetime]
+#     settings: Optional[dict] = None
+#
+#     class Config:
+#         orm_mode = True

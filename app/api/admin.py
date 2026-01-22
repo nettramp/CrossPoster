@@ -7,7 +7,7 @@ import json
 from app.models.social_account import SocialAccount as SocialAccountModel
 from app.models.post import Post as PostModel
 from app.models.statistics import Statistics as StatisticsModel
-from app.schemas.social_account import SocialAccountCreate, SocialAccount as SocialAccountSchema, SocialAccountPublic
+from app.schemas.social_account import SocialAccountCreate, SocialAccountPublic
 from app.schemas.post import PostCreate, Post as PostSchema
 from app.schemas.statistics import StatisticsCreate, Statistics as StatisticsSchema
 from app.database import SessionLocal, engine

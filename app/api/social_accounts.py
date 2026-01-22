@@ -4,7 +4,7 @@ from typing import List
 
 from app.models.database import get_db
 from app.models.social_account import SocialAccount as SocialAccountModel
-from app.schemas.social_account import SocialAccountCreate, SocialAccount as SocialAccountSchema, SocialAccountPublic
+from app.schemas.social_account import SocialAccountCreate, SocialAccountUpdate, SocialAccountPublic
 
 router = APIRouter(
     prefix="/social-accounts",
@@ -19,7 +19,8 @@ def create_social_account(account: SocialAccountCreate, db: Session = Depends(ge
         account_name=account.account_name,
         access_token=account.access_token,
         is_active=account.is_active,
-        user_id=account.user_id
+        user_id=account.user_id or 1,  # по умолчанию первый пользователь
+        settings=account.settings
     )
     db.add(db_account)
     db.commit()
@@ -39,13 +40,14 @@ def read_social_account(account_id: int, db: Session = Depends(get_db)):
     return db_account
 
 @router.put("/{account_id}", response_model=SocialAccountPublic)
-def update_social_account(account_id: int, account: SocialAccountCreate, db: Session = Depends(get_db)):
+def update_social_account(account_id: int, account: SocialAccountUpdate, db: Session = Depends(get_db)):
     db_account = db.query(SocialAccountModel).filter(SocialAccountModel.id == account_id).first()
     if db_account is None:
         raise HTTPException(status_code=404, detail="Social account not found")
     
     for key, value in account.dict().items():
-        setattr(db_account, key, value)
+        if key != 'id':  # не обновляем ID
+            setattr(db_account, key, value)
     
     db.commit()
     db.refresh(db_account)

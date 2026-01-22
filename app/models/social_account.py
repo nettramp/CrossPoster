@@ -12,8 +12,12 @@ class SocialAccount(Base):
     platform = Column(String, index=True)  # vk, telegram, instagram, pinterest, youtube
     account_name = Column(String)
     _access_token = Column("access_token", String)
-    settings = Column(JSON, nullable=True)
     _refresh_token = Column("refresh_token", String, nullable=True)
+    token_expires_at = Column(DateTime, nullable=True)
+    settings = Column(JSON, nullable=True)
+    is_active = Column(Boolean, default=True)
+    created_at = Column(DateTime(timezone=True), server_default=func.now())
+    updated_at = Column(DateTime(timezone=True), onupdate=func.now())
     
     @property
     def access_token(self):
