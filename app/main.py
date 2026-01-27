@@ -1,13 +1,16 @@
 import uvicorn
-from fastapi import FastAPI, Request
+from fastapi import FastAPI, Request, Depends
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 from fastapi.responses import HTMLResponse
 from fastapi.templating import Jinja2Templates
 from pathlib import Path
+from sqlalchemy.orm import Session
 
 from app.api.main import api_router
 from app.core.config import settings
+from app.models.social_account import SocialAccount as SocialAccountModel
+from app.models.database import get_db
 
 app = FastAPI(
     title="CrossPoster API",
@@ -38,8 +41,17 @@ async def root(request: Request):
     return templates.TemplateResponse("index.html", {"request": request})
 
 @app.get("/accounts")
-async def accounts_page(request: Request):
-    return templates.TemplateResponse("accounts.html", {"request": request})
+async def accounts_page(request: Request, db: Session = Depends(get_db)):
+    # Получаем все существующие аккаунты из базы данных
+    social_accounts = db.query(SocialAccountModel).all()
+    
+    # Создаем словарь для быстрого поиска подключенных аккаунтов
+    connected_platforms = {account.platform for account in social_accounts if account.is_active}
+    
+    return templates.TemplateResponse("accounts.html", {
+        "request": request,
+        "connected_platforms": connected_platforms
+    })
 
 @app.get("/settings")
 async def settings_page(request: Request):

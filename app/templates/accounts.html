@@ -53,75 +53,75 @@
 
         <div class="row">
             <div class="col-md-4 mb-4">
-                <div class="card social-card connected">
+                <div class="card social-card {% if 'vk' in connected_platforms %}connected{% else %}disconnected{% endif %}">
                     <div class="card-body text-center">
                         <div class="mb-3">
                             <i class="fab fa-vk fa-3x" style="color: #4680C2;"></i>
                         </div>
                         <h5 class="card-title">ВКонтакте</h5>
                         <p class="card-text">Подключите аккаунт ВКонтакте для публикации постов</p>
-                        <button class="btn btn-outline-primary" data-bs-toggle="modal" data-bs-target="#vkModal">
-                            Настроить
+                        <button class="btn {% if 'vk' in connected_platforms %}btn-success{% else %}btn-outline-primary{% endif %}" data-bs-toggle="modal" data-bs-target="#vkModal">
+                            {% if 'vk' in connected_platforms %}Изменить{% else %}Настроить{% endif %}
                         </button>
                     </div>
                 </div>
             </div>
             
             <div class="col-md-4 mb-4">
-                <div class="card social-card disconnected">
+                <div class="card social-card {% if 'telegram' in connected_platforms %}connected{% else %}disconnected{% endif %}">
                     <div class="card-body text-center">
                         <div class="mb-3">
                             <i class="fab fa-telegram fa-3x" style="color: #0088CC;"></i>
                         </div>
                         <h5 class="card-title">Telegram</h5>
                         <p class="card-text">Подключите Telegram-бота для публикации постов</p>
-                        <button class="btn btn-outline-secondary" data-bs-toggle="modal" data-bs-target="#telegramModal" disabled>
-                            Настроить
+                        <button class="btn {% if 'telegram' in connected_platforms %}btn-success{% else %}btn-outline-primary{% endif %}" data-bs-toggle="modal" data-bs-target="#telegramModal">
+                            {% if 'telegram' in connected_platforms %}Изменить{% else %}Настроить{% endif %}
                         </button>
                     </div>
                 </div>
             </div>
             
             <div class="col-md-4 mb-4">
-                <div class="card social-card disconnected">
+                <div class="card social-card {% if 'instagram' in connected_platforms %}connected{% else %}disconnected{% endif %}">
                     <div class="card-body text-center">
                         <div class="mb-3">
                             <i class="fab fa-instagram fa-3x" style="background: linear-gradient(45deg, #f09433 0%,#e6683c 25%,#dc2743 50%,#cc2366 75%,#bc1888 100%); -webkit-background-clip: text; -webkit-text-fill-color: transparent;"></i>
                         </div>
                         <h5 class="card-title">Instagram</h5>
                         <p class="card-text">Подключите аккаунт Instagram для публикации постов</p>
-                        <button class="btn btn-outline-secondary" data-bs-toggle="modal" data-bs-target="#instagramModal" disabled>
-                            Настроить
+                        <button class="btn {% if 'instagram' in connected_platforms %}btn-success{% else %}btn-outline-primary{% endif %}" data-bs-toggle="modal" data-bs-target="#instagramModal">
+                            {% if 'instagram' in connected_platforms %}Изменить{% else %}Настроить{% endif %}
                         </button>
                     </div>
                 </div>
             </div>
             
             <div class="col-md-4 mb-4">
-                <div class="card social-card disconnected">
+                <div class="card social-card {% if 'pinterest' in connected_platforms %}connected{% else %}disconnected{% endif %}">
                     <div class="card-body text-center">
                         <div class="mb-3">
                             <i class="fab fa-pinterest fa-3x" style="color: #bd081c;"></i>
                         </div>
                         <h5 class="card-title">Pinterest</h5>
                         <p class="card-text">Подключите аккаунт Pinterest для публикации постов</p>
-                        <button class="btn btn-outline-secondary" data-bs-toggle="modal" data-bs-target="#pinterestModal" disabled>
-                            Настроить
+                        <button class="btn {% if 'pinterest' in connected_platforms %}btn-success{% else %}btn-outline-primary{% endif %}" data-bs-toggle="modal" data-bs-target="#pinterestModal">
+                            {% if 'pinterest' in connected_platforms %}Изменить{% else %}Настроить{% endif %}
                         </button>
                     </div>
                 </div>
             </div>
             
             <div class="col-md-4 mb-4">
-                <div class="card social-card disconnected">
+                <div class="card social-card {% if 'youtube' in connected_platforms %}connected{% else %}disconnected{% endif %}">
                     <div class="card-body text-center">
                         <div class="mb-3">
                             <i class="fab fa-youtube fa-3x" style="color: #ff0000;"></i>
                         </div>
                         <h5 class="card-title">YouTube</h5>
                         <p class="card-text">Подключите аккаунт YouTube для публикации коротких видео</p>
-                        <button class="btn btn-outline-secondary" data-bs-toggle="modal" data-bs-target="#youtubeModal" disabled>
-                            Настроить
+                        <button class="btn {% if 'youtube' in connected_platforms %}btn-success{% else %}btn-outline-primary{% endif %}" data-bs-toggle="modal" data-bs-target="#youtubeModal">
+                            {% if 'youtube' in connected_platforms %}Изменить{% else %}Настроить{% endif %}
                         </button>
                     </div>
                 </div>
