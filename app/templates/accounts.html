@@ -306,6 +306,37 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/js/all.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
     <script>
+        // Функция для отправки данных аккаунта
+        function saveAccount(data, successMessage) {
+            fetch('/api/v1/admin/admin/social-accounts/', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify(data)
+            })
+            .then(response => {
+                if (!response.ok) {
+                    return response.json().then(err => {
+                        throw new Error(err.detail || JSON.stringify(err));
+                    });
+                }
+                return response.json();
+            })
+            .then(data => {
+                if (data.id) {
+                    alert(successMessage);
+                    location.reload();
+                } else {
+                    alert('Ошибка при сохранении аккаунта: неизвестная ошибка');
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                alert('Ошибка при сохранении аккаунта: ' + error.message);
+            });
+        }
+
         // Обработка формы ВКонтакте
         document.getElementById('vk-form').addEventListener('submit', function(e) {
             e.preventDefault();
@@ -313,33 +344,19 @@
             const token = document.getElementById('vk-token').value;
             const groupId = document.getElementById('vk-group-id').value;
             
-            const formData = new FormData();
-            formData.append('platform', 'vk');
-            formData.append('account_name', 'VK Account');
-            formData.append('access_token', token);
-            formData.append('user_id', '1'); // по умолчанию
+            const data = {
+                platform: 'vk',
+                account_name: 'VK Account',
+                access_token: token,
+                user_id: 1,
+                is_active: true
+            };
             
             if (groupId) {
-                formData.append('settings', JSON.stringify({ group_id: groupId }));
+                data.settings = { group_id: groupId };
             }
             
-            fetch('/api/v1/admin/admin/social-accounts/', {
-                method: 'POST',
-                body: formData
-            })
-            .then(response => response.json())
-            .then(data => {
-                if (data.id) {
-                    alert('Аккаунт VK успешно сохранен!');
-                    location.reload(); // Обновляем страницу для отображения изменений
-                } else {
-                    alert('Ошибка при сохранении аккаунта: ' + (data.detail || 'Неизвестная ошибка'));
-                }
-            })
-            .catch(error => {
-                console.error('Error:', error);
-                alert('Произошла ошибка при сохранении аккаунта');
-            });
+            saveAccount(data, 'Аккаунт VK успешно сохранен!');
         });
         
         // Обработка формы Telegram
@@ -349,30 +366,16 @@
             const token = document.getElementById('telegram-token').value;
             const channel = document.getElementById('telegram-channel').value;
             
-            const formData = new FormData();
-            formData.append('platform', 'telegram');
-            formData.append('account_name', 'Telegram Channel');
-            formData.append('access_token', token);
-            formData.append('user_id', '1'); // по умолчанию
-            formData.append('settings', JSON.stringify({ channel: channel }));
+            const data = {
+                platform: 'telegram',
+                account_name: 'Telegram Channel',
+                access_token: token,
+                user_id: 1,
+                is_active: true,
+                settings: { channel: channel }
+            };
             
-            fetch('/api/v1/admin/admin/social-accounts/', {
-                method: 'POST',
-                body: formData
-            })
-            .then(response => response.json())
-            .then(data => {
-                if (data.id) {
-                    alert('Telegram аккаунт успешно сохранен!');
-                    location.reload(); // Обновляем страницу для отображения изменений
-                } else {
-                    alert('Ошибка при сохранении аккаунта: ' + (data.detail || 'Неизвестная ошибка'));
-                }
-            })
-            .catch(error => {
-                console.error('Error:', error);
-                alert('Произошла ошибка при сохранении аккаунта');
-            });
+            saveAccount(data, 'Telegram аккаунт успешно сохранен!');
         });
         
         // Обработка формы Instagram
@@ -382,29 +385,15 @@
             const username = document.getElementById('instagram-username').value;
             const password = document.getElementById('instagram-password').value;
             
-            const formData = new FormData();
-            formData.append('platform', 'instagram');
-            formData.append('account_name', username);
-            formData.append('access_token', btoa(username + ':' + password)); // временно кодируем, на сервере будет шифрование
-            formData.append('user_id', '1'); // по умолчанию
+            const data = {
+                platform: 'instagram',
+                account_name: username,
+                access_token: btoa(username + ':' + password),
+                user_id: 1,
+                is_active: true
+            };
             
-            fetch('/api/v1/admin/admin/social-accounts/', {
-                method: 'POST',
-                body: formData
-            })
-            .then(response => response.json())
-            .then(data => {
-                if (data.id) {
-                    alert('Instagram аккаунт успешно сохранен!');
-                    location.reload(); // Обновляем страницу для отображения изменений
-                } else {
-                    alert('Ошибка при сохранении аккаунта: ' + (data.detail || 'Неизвестная ошибка'));
-                }
-            })
-            .catch(error => {
-                console.error('Error:', error);
-                alert('Произошла ошибка при сохранении аккаунта');
-            });
+            saveAccount(data, 'Instagram аккаунт успешно сохранен!');
         });
         
         // Обработка формы Pinterest
@@ -414,30 +403,16 @@
             const token = document.getElementById('pinterest-token').value;
             const board = document.getElementById('pinterest-board').value;
             
-            const formData = new FormData();
-            formData.append('platform', 'pinterest');
-            formData.append('account_name', 'Pinterest Board');
-            formData.append('access_token', token);
-            formData.append('user_id', '1'); // по умолчанию
-            formData.append('settings', JSON.stringify({ board: board }));
+            const data = {
+                platform: 'pinterest',
+                account_name: 'Pinterest Board',
+                access_token: token,
+                user_id: 1,
+                is_active: true,
+                settings: { board: board }
+            };
             
-            fetch('/api/v1/admin/admin/social-accounts/', {
-                method: 'POST',
-                body: formData
-            })
-            .then(response => response.json())
-            .then(data => {
-                if (data.id) {
-                    alert('Pinterest аккаунт успешно сохранен!');
-                    location.reload(); // Обновляем страницу для отображения изменений
-                } else {
-                    alert('Ошибка при сохранении аккаунта: ' + (data.detail || 'Неизвестная ошибка'));
-                }
-            })
-            .catch(error => {
-                console.error('Error:', error);
-                alert('Произошла ошибка при сохранении аккаунта');
-            });
+            saveAccount(data, 'Pinterest аккаунт успешно сохранен!');
         });
         
         // Обработка формы YouTube
@@ -447,33 +422,17 @@
             const token = document.getElementById('youtube-token').value;
             const channel = document.getElementById('youtube-channel').value;
             
-            const formData = new FormData();
-            formData.append('platform', 'youtube');
-            formData.append('account_name', 'YouTube Channel');
-            formData.append('access_token', token);
-            formData.append('user_id', '1'); // по умолчанию
-            formData.append('settings', JSON.stringify({ channel_id: channel }));
+            const data = {
+                platform: 'youtube',
+                account_name: 'YouTube Channel',
+                access_token: token,
+                user_id: 1,
+                is_active: true,
+                settings: { channel_id: channel }
+            };
             
-            fetch('/api/v1/admin/admin/social-accounts/', {
-                method: 'POST',
-                body: formData
-            })
-            .then(response => response.json())
-            .then(data => {
-                if (data.id) {
-                    alert('YouTube аккаунт успешно сохранен!');
-                    location.reload(); // Обновляем страницу для отображения изменений
-                } else {
-                    alert('Ошибка при сохранении аккаунта: ' + (data.detail || 'Неизвестная ошибка'));
-                }
-            })
-            .catch(error => {
-                console.error('Error:', error);
-                alert('Произошла ошибка при сохранении аккаунта');
-            });
+            saveAccount(data, 'YouTube аккаунт успешно сохранен!');
         });
-        
-        // Удалена устаревшая функция saveSocialAccount, так как каждая форма теперь имеет свою собственную обработку
     </script>
 </body>
 </html>

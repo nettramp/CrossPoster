@@ -263,21 +263,39 @@
             fetch('/api/v1/admin/admin/social-accounts/status')
                 .then(response => response.json())
                 .then(accounts => {
-                    accounts.forEach(account => {
-                        const statusElement = document.getElementById(`${account.platform.toLowerCase()}-status`);
-                        if (statusElement) {
-                            statusElement.classList.remove('disconnected');
-                            statusElement.classList.add('connected');
-                            
-                            // Обновляем текст статуса
-                            const parentDiv = statusElement.parentElement;
-                            const statusText = parentDiv.querySelector('small');
-                            if (statusText) {
-                                statusText.textContent = 'Подключен';
-                                statusText.className = 'text-success';
+                    console.log('Received accounts:', accounts); // Для отладки
+                    if (Array.isArray(accounts) && accounts.length > 0) {
+                        accounts.forEach(account => {
+                            if (account.is_active) {
+                                // Маппинг платформ на ID элементов
+                                const platformMap = {
+                                    'vk': 'vk',
+                                    'telegram': 'tg',
+                                    'instagram': 'ig',
+                                    'pinterest': 'pin',
+                                    'youtube': 'yt'
+                                };
+                                
+                                const elementId = platformMap[account.platform.toLowerCase()] || account.platform.toLowerCase();
+                                const statusElement = document.getElementById(`${elementId}-status`);
+                                
+                                if (statusElement) {
+                                    statusElement.classList.remove('disconnected');
+                                    statusElement.classList.add('connected');
+                                    
+                                    // Обновляем текст статуса
+                                    const parentDiv = statusElement.parentElement;
+                                    const statusText = parentDiv.querySelector('small');
+                                    if (statusText) {
+                                        statusText.textContent = 'Подключен';
+                                        statusText.className = 'text-success';
+                                    }
+                                } else {
+                                    console.warn(`Element not found for platform: ${account.platform}`);
+                                }
                             }
-                        }
-                    });
+                        });
+                    }
                 })
                 .catch(error => console.error('Error checking connections:', error));
         }

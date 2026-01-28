@@ -7,6 +7,7 @@ import json
 from app.models.social_account import SocialAccount as SocialAccountModel
 from app.models.post import Post as PostModel
 from app.models.statistics import Statistics as StatisticsModel
+from app.models.user import User as UserModel
 from app.schemas.social_account import SocialAccountCreate, SocialAccountPublic
 from app.schemas.post import PostCreate, Post as PostSchema
 from app.schemas.statistics import StatisticsCreate, Statistics as StatisticsSchema
@@ -25,24 +26,20 @@ def get_db():
     finally:
         db.close()
 
-@router.get("/accounts/status", response_model=List[dict])
-async def get_connected_accounts_status(db=Depends(get_db)):
-    """
-    Получить статус подключения ко всем аккаунтам социальных сетей
-    """
-    accounts = db.query(SocialAccountModel).all()
-    result = []
-    
-    for account in accounts:
-        result.append({
-            "id": account.id,
-            "platform": account.platform,
-            "account_name": account.account_name,
-            "is_active": account.is_active,
-            "connected_at": account.created_at.isoformat() if account.created_at else None
-        })
-    
-    return result
+def get_or_create_default_user(db):
+    """Получить или создать пользователя по умолчанию"""
+    user = db.query(UserModel).filter(UserModel.id == 1).first()
+    if not user:
+        user = UserModel(
+            id=1,
+            username="admin",
+            email="admin@crossposter.local",
+            password_hash="not_used"
+        )
+        db.add(user)
+        db.commit()
+        db.refresh(user)
+    return user
 
 @router.post("/posts/test")
 async def send_test_post(
@@ -139,9 +136,13 @@ async def create_or_update_social_account(account: SocialAccountCreate, db=Depen
     Создать или обновить аккаунт социальной сети
     """
     try:
+        # Убеждаемся, что пользователь по умолчанию существует
+        user_id = account.user_id or 1
+        get_or_create_default_user(db)
+        
         # Проверяем, существует ли уже аккаунт для этой платформы у пользователя
         existing_account = db.query(SocialAccountModel).filter(
-            SocialAccountModel.user_id == (account.user_id or 1),
+            SocialAccountModel.user_id == user_id,
             SocialAccountModel.platform == account.platform
         ).first()
         
@@ -161,7 +162,7 @@ async def create_or_update_social_account(account: SocialAccountCreate, db=Depen
                 account_name=account.account_name,
                 access_token=account.access_token,  # будет зашифрован автоматически через модель
                 is_active=account.is_active or True,
-                user_id=account.user_id or 1,  # по умолчанию первый пользователь
+                user_id=user_id,
                 settings=account.settings
             )
             db.add(db_account)
@@ -169,9 +170,10 @@ async def create_or_update_social_account(account: SocialAccountCreate, db=Depen
             db.refresh(db_account)
             return db_account
     except Exception as e:
+        db.rollback()
         raise HTTPException(status_code=500, detail=f"Ошибка при сохранении аккаунта: {str(e)}")
 
-@router.get("/social-accounts/status", response_model=List[SocialAccountPublic])
+@router.get("/social-accounts/status")
 async def get_all_accounts_status(db=Depends(get_db)):
     """
     Получить статус всех аккаунтов
@@ -184,7 +186,8 @@ async def get_all_accounts_status(db=Depends(get_db)):
             "id": account.id,
             "platform": account.platform,
             "account_name": account.account_name,
-            "is_active": account.is_active
+            "is_active": account.is_active,
+            "created_at": account.created_at.isoformat() if account.created_at else None
         })
     
     return result
