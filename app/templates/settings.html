@@ -1,0 +1,545 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Настройки - CrossPoster</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <style>
+        body {
+            background-color: #f8f9fa;
+        }
+        .card {
+            box-shadow: 0 0.125rem 0.25rem rgba(0, 0, 0, 0.075);
+            border: 1px solid rgba(0, 0, 0, 0.125);
+        }
+        .platform-card {
+            transition: transform 0.2s;
+        }
+        .platform-card:hover {
+            transform: translateY(-3px);
+        }
+        .social-icon {
+            width: 48px;
+            height: 48px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 50%;
+            color: white;
+            font-size: 1.5rem;
+        }
+        .vk { background-color: #4680C2; }
+        .telegram { background-color: #0088CC; }
+        .instagram { background: linear-gradient(45deg, #f09433 0%,#e6683c 25%,#dc2743 50%,#cc2366 75%,#bc1888 100%); }
+        .pinterest { background-color: #bd081c; }
+        .youtube { background-color: #ff0000; }
+        .stat-badge {
+            font-size: 0.85rem;
+            padding: 0.35em 0.65em;
+        }
+        .account-item {
+            border-left: 3px solid #dee2e6;
+            padding-left: 15px;
+            margin-bottom: 10px;
+        }
+        .account-item.active {
+            border-left-color: #28a745;
+        }
+        .account-item.inactive {
+            border-left-color: #dc3545;
+        }
+        .counter-box {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border-radius: 10px;
+            padding: 15px;
+            text-align: center;
+        }
+        .counter-box h3 {
+            margin: 0;
+            font-size: 2rem;
+            font-weight: bold;
+        }
+        .counter-box p {
+            margin: 5px 0 0 0;
+            opacity: 0.9;
+        }
+    </style>
+</head>
+<body>
+    <nav class="navbar navbar-expand-lg navbar-dark bg-primary">
+        <div class="container">
+            <a class="navbar-brand" href="/">CrossPoster</a>
+            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
+                <span class="navbar-toggler-icon"></span>
+            </button>
+            <div class="collapse navbar-collapse" id="navbarNav">
+                <ul class="navbar-nav ms-auto">
+                    <li class="nav-item">
+                        <a class="nav-link" href="/">Главная</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="/accounts">Аккаунты</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link active" href="/settings">Настройки</a>
+                    </li>
+                </ul>
+            </div>
+        </div>
+    </nav>
+
+    <div class="container mt-4">
+        <div class="row">
+            <div class="col-md-12">
+                <h1 class="mb-4">Настройки</h1>
+                <p class="lead">Управление подключенными аккаунтами и статистика репостов</p>
+            </div>
+        </div>
+
+        <!-- Общая статистика -->
+        <div class="row mb-4">
+            <div class="col-md-3">
+                <div class="counter-box">
+                    <h3 id="total-accounts">0</h3>
+                    <p>Всего аккаунтов</p>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="counter-box" style="background: linear-gradient(135deg, #11998e 0%, #38ef7d 100%);">
+                    <h3 id="active-accounts">0</h3>
+                    <p>Активных аккаунтов</p>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="counter-box" style="background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);">
+                    <h3 id="total-reposts">0</h3>
+                    <p>Всего репостов</p>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="counter-box" style="background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);">
+                    <h3 id="total-test-posts">0</h3>
+                    <p>Тестовых постов</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Платформы -->
+        <div class="row" id="platforms-container">
+            <!-- Платформы будут загружены динамически -->
+            <div class="col-12 text-center py-5">
+                <div class="spinner-border text-primary" role="status">
+                    <span class="visually-hidden">Загрузка...</span>
+                </div>
+                <p class="mt-2 text-muted">Загрузка данных...</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal для просмотра/редактирования аккаунта -->
+    <div class="modal fade" id="accountModal" tabindex="-1" aria-labelledby="accountModalLabel" aria-hidden="true">
+        <div class="modal-dialog modal-lg">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="accountModalLabel">Редактирование аккаунта</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <form id="edit-account-form">
+                    <div class="modal-body">
+                        <input type="hidden" id="edit-account-id">
+                        <input type="hidden" id="edit-account-platform">
+                        
+                        <div class="mb-3">
+                            <label for="edit-account-name" class="form-label">Название аккаунта</label>
+                            <input type="text" class="form-control" id="edit-account-name" required>
+                        </div>
+                        
+                        <div class="mb-3">
+                            <label for="edit-access-token" class="form-label">Токен доступа</label>
+                            <input type="password" class="form-control" id="edit-access-token" placeholder="Оставьте пустым, чтобы не менять">
+                            <div class="form-text">Оставьте поле пустым, если не хотите менять токен</div>
+                        </div>
+                        
+                        <div class="mb-3">
+                            <div class="form-check form-switch">
+                                <input class="form-check-input" type="checkbox" id="edit-is-active">
+                                <label class="form-check-label" for="edit-is-active">Аккаунт активен</label>
+                            </div>
+                        </div>
+                        
+                        <div id="platform-specific-settings">
+                            <!-- Специфичные настройки платформы будут добавлены динамически -->
+                        </div>
+                        
+                        <hr>
+                        
+                        <div class="row">
+                            <div class="col-md-6">
+                                <h6>Статистика аккаунта</h6>
+                                <p class="mb-1"><strong>Репостов:</strong> <span id="edit-reposts-count">0</span></p>
+                                <p class="mb-1"><strong>Постов:</strong> <span id="edit-posts-count">0</span></p>
+                            </div>
+                            <div class="col-md-6">
+                                <p class="mb-1"><strong>Создан:</strong> <span id="edit-created-at">-</span></p>
+                                <p class="mb-1"><strong>Обновлен:</strong> <span id="edit-updated-at">-</span></p>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-danger me-auto" id="delete-account-btn">Удалить</button>
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Отмена</button>
+                        <button type="submit" class="btn btn-primary">Сохранить</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <footer class="bg-light mt-5 py-4">
+        <div class="container">
+            <div class="row">
+                <div class="col-md-12 text-center">
+                    <p class="mb-0">&copy; 2026 CrossPoster. Платформа автоматического кросспостинга.</p>
+                </div>
+            </div>
+        </div>
+    </footer>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/js/all.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        // Конфигурация платформ
+        const platformConfig = {
+            vk: {
+                name: 'ВКонтакте',
+                icon: 'fab fa-vk',
+                color: '#4680C2',
+                settingsFields: [
+                    { key: 'group_id', label: 'ID группы', type: 'text', placeholder: 'ID группы для публикации' }
+                ]
+            },
+            telegram: {
+                name: 'Telegram',
+                icon: 'fab fa-telegram',
+                color: '#0088CC',
+                settingsFields: [
+                    { key: 'channel', label: 'Канал', type: 'text', placeholder: '@channel_name или ID' }
+                ]
+            },
+            instagram: {
+                name: 'Instagram',
+                icon: 'fab fa-instagram',
+                color: '#E4405F',
+                gradient: 'linear-gradient(45deg, #f09433 0%,#e6683c 25%,#dc2743 50%,#cc2366 75%,#bc1888 100%)',
+                settingsFields: []
+            },
+            pinterest: {
+                name: 'Pinterest',
+                icon: 'fab fa-pinterest',
+                color: '#bd081c',
+                settingsFields: [
+                    { key: 'board', label: 'Доска', type: 'text', placeholder: 'username/board_name' }
+                ]
+            },
+            youtube: {
+                name: 'YouTube',
+                icon: 'fab fa-youtube',
+                color: '#ff0000',
+                settingsFields: [
+                    { key: 'channel_id', label: 'ID канала', type: 'text', placeholder: 'ID YouTube канала' }
+                ]
+            }
+        };
+
+        let currentAccountData = null;
+
+        // Загрузка данных при открытии страницы
+        document.addEventListener('DOMContentLoaded', function() {
+            loadDetailedAccounts();
+        });
+
+        // Загрузка детальной информации об аккаунтах
+        function loadDetailedAccounts() {
+            fetch('/api/v1/admin/admin/social-accounts/detailed')
+                .then(response => response.json())
+                .then(data => {
+                    // Обновляем общую статистику
+                    document.getElementById('total-accounts').textContent = data.summary.total_accounts;
+                    document.getElementById('active-accounts').textContent = data.summary.active_accounts;
+                    
+                    // Подсчитываем общее количество репостов и тестовых постов
+                    let totalReposts = 0;
+                    let totalTestPosts = 0;
+                    
+                    Object.values(data.platforms).forEach(platform => {
+                        totalReposts += platform.total_reposts;
+                        totalTestPosts += platform.total_test_posts;
+                    });
+                    
+                    document.getElementById('total-reposts').textContent = totalReposts;
+                    document.getElementById('total-test-posts').textContent = totalTestPosts;
+                    
+                    // Отображаем платформы
+                    renderPlatforms(data.platforms);
+                })
+                .catch(error => {
+                    console.error('Error loading accounts:', error);
+                    document.getElementById('platforms-container').innerHTML = `
+                        <div class="col-12">
+                            <div class="alert alert-danger">
+                                Ошибка загрузки данных: ${error.message}
+                            </div>
+                        </div>
+                    `;
+                });
+        }
+
+        // Отображение платформ
+        function renderPlatforms(platforms) {
+            const container = document.getElementById('platforms-container');
+            
+            // Все поддерживаемые платформы
+            const allPlatforms = ['vk', 'telegram', 'instagram', 'pinterest', 'youtube'];
+            
+            let html = '';
+            
+            allPlatforms.forEach(platformKey => {
+                const config = platformConfig[platformKey];
+                const platformData = platforms[platformKey] || {
+                    platform: platformKey,
+                    accounts: [],
+                    total_accounts: 0,
+                    active_accounts: 0,
+                    total_reposts: 0,
+                    total_test_posts: 0
+                };
+                
+                const hasAccounts = platformData.accounts.length > 0;
+                const iconStyle = config.gradient ? `background: ${config.gradient}` : `background-color: ${config.color}`;
+                
+                html += `
+                    <div class="col-md-6 col-lg-4 mb-4">
+                        <div class="card platform-card h-100">
+                            <div class="card-header d-flex align-items-center">
+                                <div class="social-icon me-3" style="${iconStyle}">
+                                    <i class="${config.icon}"></i>
+                                </div>
+                                <div>
+                                    <h5 class="mb-0">${config.name}</h5>
+                                    <small class="text-muted">
+                                        ${platformData.total_accounts} аккаунт(ов)
+                                    </small>
+                                </div>
+                            </div>
+                            <div class="card-body">
+                                <div class="d-flex justify-content-between mb-3">
+                                    <span class="badge bg-success stat-badge">
+                                        <i class="fas fa-check-circle me-1"></i>
+                                        Активных: ${platformData.active_accounts}
+                                    </span>
+                                    <span class="badge bg-info stat-badge">
+                                        <i class="fas fa-retweet me-1"></i>
+                                        Репостов: ${platformData.total_reposts}
+                                    </span>
+                                </div>
+                                <div class="mb-3">
+                                    <span class="badge bg-secondary stat-badge">
+                                        <i class="fas fa-flask me-1"></i>
+                                        Тестовых: ${platformData.total_test_posts}
+                                    </span>
+                                </div>
+                                
+                                ${hasAccounts ? renderAccountsList(platformData.accounts, platformKey) : `
+                                    <p class="text-muted text-center mb-0">
+                                        <i class="fas fa-info-circle me-1"></i>
+                                        Нет подключенных аккаунтов
+                                    </p>
+                                `}
+                            </div>
+                            <div class="card-footer">
+                                <button class="btn btn-outline-primary btn-sm w-100" onclick="location.href='/accounts'">
+                                    <i class="fas fa-plus me-1"></i>
+                                    ${hasAccounts ? 'Добавить еще' : 'Подключить'}
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                `;
+            });
+            
+            container.innerHTML = html;
+        }
+
+        // Отображение списка аккаунтов
+        function renderAccountsList(accounts, platformKey) {
+            let html = '<div class="accounts-list">';
+            
+            accounts.forEach(account => {
+                const statusClass = account.is_active ? 'active' : 'inactive';
+                const statusText = account.is_active ? 'Активен' : 'Неактивен';
+                const statusBadge = account.is_active ? 'bg-success' : 'bg-danger';
+                
+                html += `
+                    <div class="account-item ${statusClass}">
+                        <div class="d-flex justify-content-between align-items-center">
+                            <div>
+                                <strong>${account.account_name}</strong>
+                                <span class="badge ${statusBadge} ms-2">${statusText}</span>
+                            </div>
+                            <button class="btn btn-sm btn-outline-secondary" onclick="openAccountModal(${account.id}, '${platformKey}')">
+                                <i class="fas fa-edit"></i>
+                            </button>
+                        </div>
+                        <small class="text-muted">
+                            Репостов: ${account.reposts_count} | Тестовых: ${account.test_posts_count}
+                        </small>
+                    </div>
+                `;
+            });
+            
+            html += '</div>';
+            return html;
+        }
+
+        // Открытие модального окна для редактирования аккаунта
+        function openAccountModal(accountId, platformKey) {
+            fetch(`/api/v1/admin/admin/social-accounts/${accountId}`)
+                .then(response => response.json())
+                .then(account => {
+                    currentAccountData = account;
+                    
+                    const config = platformConfig[platformKey];
+                    
+                    document.getElementById('accountModalLabel').textContent = `Редактирование аккаунта ${config.name}`;
+                    document.getElementById('edit-account-id').value = account.id;
+                    document.getElementById('edit-account-platform').value = account.platform;
+                    document.getElementById('edit-account-name').value = account.account_name;
+                    document.getElementById('edit-access-token').value = '';
+                    document.getElementById('edit-is-active').checked = account.is_active;
+                    document.getElementById('edit-reposts-count').textContent = account.reposts_count;
+                    document.getElementById('edit-posts-count').textContent = account.posts_count;
+                    document.getElementById('edit-created-at').textContent = account.created_at ? new Date(account.created_at).toLocaleString('ru-RU') : '-';
+                    document.getElementById('edit-updated-at').textContent = account.updated_at ? new Date(account.updated_at).toLocaleString('ru-RU') : '-';
+                    
+                    // Генерируем специфичные поля для платформы
+                    const settingsContainer = document.getElementById('platform-specific-settings');
+                    let settingsHtml = '';
+                    
+                    if (config.settingsFields && config.settingsFields.length > 0) {
+                        settingsHtml = '<h6>Настройки платформы</h6>';
+                        config.settingsFields.forEach(field => {
+                            const value = account.settings && account.settings[field.key] ? account.settings[field.key] : '';
+                            settingsHtml += `
+                                <div class="mb-3">
+                                    <label for="setting-${field.key}" class="form-label">${field.label}</label>
+                                    <input type="${field.type}" class="form-control platform-setting" 
+                                           id="setting-${field.key}" 
+                                           data-key="${field.key}"
+                                           value="${value}"
+                                           placeholder="${field.placeholder}">
+                                </div>
+                            `;
+                        });
+                    }
+                    
+                    settingsContainer.innerHTML = settingsHtml;
+                    
+                    // Открываем модальное окно
+                    const modal = new bootstrap.Modal(document.getElementById('accountModal'));
+                    modal.show();
+                })
+                .catch(error => {
+                    console.error('Error loading account:', error);
+                    alert('Ошибка загрузки данных аккаунта');
+                });
+        }
+
+        // Обработка формы редактирования
+        document.getElementById('edit-account-form').addEventListener('submit', function(e) {
+            e.preventDefault();
+            
+            const accountId = document.getElementById('edit-account-id').value;
+            const platform = document.getElementById('edit-account-platform').value;
+            
+            // Собираем настройки платформы
+            const settings = {};
+            document.querySelectorAll('.platform-setting').forEach(input => {
+                const key = input.dataset.key;
+                const value = input.value.trim();
+                if (value) {
+                    settings[key] = value;
+                }
+            });
+            
+            const data = {
+                platform: platform,
+                account_name: document.getElementById('edit-account-name').value,
+                is_active: document.getElementById('edit-is-active').checked,
+                user_id: 1,
+                settings: Object.keys(settings).length > 0 ? settings : null
+            };
+            
+            const accessToken = document.getElementById('edit-access-token').value;
+            if (accessToken) {
+                data.access_token = accessToken;
+            }
+            
+            fetch(`/api/v1/admin/admin/social-accounts/${accountId}`, {
+                method: 'PUT',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify(data)
+            })
+            .then(response => {
+                if (!response.ok) {
+                    return response.json().then(err => {
+                        throw new Error(err.detail || 'Ошибка сохранения');
+                    });
+                }
+                return response.json();
+            })
+            .then(result => {
+                alert('Аккаунт успешно обновлен!');
+                bootstrap.Modal.getInstance(document.getElementById('accountModal')).hide();
+                loadDetailedAccounts();
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                alert('Ошибка при сохранении: ' + error.message);
+            });
+        });
+
+        // Удаление аккаунта
+        document.getElementById('delete-account-btn').addEventListener('click', function() {
+            const accountId = document.getElementById('edit-account-id').value;
+            const accountName = document.getElementById('edit-account-name').value;
+            
+            if (confirm(`Вы уверены, что хотите удалить аккаунт "${accountName}"? Это действие нельзя отменить.`)) {
+                fetch(`/api/v1/admin/admin/social-accounts/${accountId}`, {
+                    method: 'DELETE'
+                })
+                .then(response => {
+                    if (!response.ok) {
+                        return response.json().then(err => {
+                            throw new Error(err.detail || 'Ошибка удаления');
+                        });
+                    }
+                    return response.json();
+                })
+                .then(result => {
+                    alert('Аккаунт успешно удален!');
+                    bootstrap.Modal.getInstance(document.getElementById('accountModal')).hide();
+                    loadDetailedAccounts();
+                })
+                .catch(error => {
+                    console.error('Error:', error);
+                    alert('Ошибка при удалении: ' + error.message);
+                });
+            }
+        });
+    </script>
+</body>
+</html>

@@ -129,6 +129,17 @@
                                 <label for="media-upload" class="form-label">Медиа файлы</label>
                                 <input type="file" class="form-control" id="media-upload" accept="image/*,video/*" multiple>
                             </div>
+                            <div class="mb-3">
+                                <label for="target-platform" class="form-label">Выберите социальную сеть</label>
+                                <select class="form-select" id="target-platform">
+                                    <option value="" selected>Все подключенные</option>
+                                    <option value="vk">VK</option>
+                                    <option value="telegram">Telegram</option>
+                                    <option value="instagram">Instagram</option>
+                                    <option value="pinterest">Pinterest</option>
+                                    <option value="youtube">YouTube</option>
+                                </select>
+                            </div>
                             <button type="submit" class="btn btn-success">Отправить тестовый репост</button>
                         </form>
                     </div>
@@ -209,6 +220,7 @@
             
             const content = document.getElementById('test-content').value;
             const mediaInput = document.getElementById('media-upload');
+            const targetPlatform = document.getElementById('target-platform').value;
             
             if (!content.trim()) {
                 alert('Пожалуйста, введите текст поста');
@@ -217,6 +229,8 @@
 
             // Подготовка данных для отправки
             const formData = new FormData();
+            formData.append('content', content);
+            formData.append('target_platform', targetPlatform);
             
             if (mediaInput.files.length > 0) {
                 for (let i = 0; i < mediaInput.files.length; i++) {
@@ -225,16 +239,23 @@
             }
 
             // Отправка запроса
-            fetch(`/api/v1/admin/admin/posts/test?content=${encodeURIComponent(content)}`, {
+            fetch('/api/v1/admin/admin/posts/test', {
                 method: 'POST',
                 body: formData
             })
             .then(response => response.json())
             .then(data => {
                 if (data.success) {
-                    alert('Тестовый пост успешно отправлен во все подключенные социальные сети!');
+                    let message = 'Тестовый пост успешно отправлен';
+                    if (targetPlatform) {
+                        message += ` в ${targetPlatform}`;
+                    } else {
+                        message += ' во все подключенные социальные сети';
+                    }
+                    alert(message + '!');
                     document.getElementById('test-content').value = '';
                     document.getElementById('media-upload').value = '';
+                    document.getElementById('target-platform').value = '';
                 } else {
                     alert('Ошибка при отправке тестового поста: ' + data.message);
                 }

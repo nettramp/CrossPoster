@@ -55,8 +55,7 @@ async def accounts_page(request: Request, db: Session = Depends(get_db)):
 
 @app.get("/settings")
 async def settings_page(request: Request):
-    # Пока возвращаем главную страницу, позже добавим отдельную страницу настроек
-    return templates.TemplateResponse("index.html", {"request": request})
+    return templates.TemplateResponse("settings.html", {"request": request})
 
 @app.get("/health")
 async def health_check():

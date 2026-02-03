@@ -44,19 +44,25 @@ def get_or_create_default_user(db):
 @router.post("/posts/test")
 async def send_test_post(
     content: str,
+    target_platform: Optional[str] = None,
     media: Optional[List[str]] = None,
     db=Depends(get_db),
     background_tasks: BackgroundTasks = None
 ):
     """
-    Отправить тестовый пост во все подключенные социальные сети
+    Отправить тестовый пост во все подключенные социальные сети или в конкретную платформу
     """
     try:
-        # Получаем все активные аккаунты
-        active_accounts = db.query(SocialAccountModel).filter(SocialAccountModel.is_active == True).all()
+        # Фильтруем аккаунты по выбранной платформе
+        query = db.query(SocialAccountModel).filter(SocialAccountModel.is_active == True)
+        if target_platform:
+            query = query.filter(SocialAccountModel.platform == target_platform)
+        
+        active_accounts = query.all()
         
         if not active_accounts:
-            raise HTTPException(status_code=400, detail="Нет подключенных аккаунтов")
+            platform_msg = f"платформу {target_platform}" if target_platform else "подключенные аккаунты"
+            raise HTTPException(status_code=400, detail=f"Нет активных аккаунтов для {platform_msg}")
         
         # Создаем тестовый пост
         test_post = PostModel(
@@ -103,9 +109,10 @@ async def send_test_post(
         db.add(stat)
         db.commit()
         
+        platform_msg = f"в {target_platform}" if target_platform else "во все подключенные социальные сети"
         return {
             "success": True,
-            "message": f"Тестовый пост отправлен в {len(active_accounts)} аккаунтов",
+            "message": f"Тестовый пост отправлен {platform_msg} ({len(active_accounts)} аккаунт(ов))",
             "task_id": task_result.id,
             "results": "Task queued for processing"
         }
@@ -191,3 +198,150 @@ async def get_all_accounts_status(db=Depends(get_db)):
         })
     
     return result
+
+
+@router.get("/social-accounts/detailed")
+async def get_detailed_accounts_status(db=Depends(get_db)):
+    """
+    Получить детальную информацию о всех аккаунтах с статистикой репостов
+    """
+    from sqlalchemy import func as sql_func
+    
+    accounts = db.query(SocialAccountModel).all()
+    
+    # Группируем аккаунты по платформам
+    platforms = {}
+    
+    for account in accounts:
+        platform = account.platform.lower()
+        
+        # Получаем статистику репостов для этого аккаунта
+        stats = db.query(
+            sql_func.coalesce(sql_func.sum(StatisticsModel.reposts_count), 0).label('total_reposts'),
+            sql_func.coalesce(sql_func.sum(StatisticsModel.posts_count), 0).label('total_posts')
+        ).filter(StatisticsModel.account_id == account.id).first()
+        
+        # Получаем количество тестовых постов
+        test_posts_count = db.query(PostModel).filter(
+            PostModel.status == "test"
+        ).count()
+        
+        account_data = {
+            "id": account.id,
+            "account_name": account.account_name,
+            "is_active": account.is_active,
+            "created_at": account.created_at.isoformat() if account.created_at else None,
+            "updated_at": account.updated_at.isoformat() if account.updated_at else None,
+            "settings": account.settings or {},
+            "reposts_count": int(stats.total_reposts) if stats else 0,
+            "posts_count": int(stats.total_posts) if stats else 0,
+            "test_posts_count": test_posts_count
+        }
+        
+        if platform not in platforms:
+            platforms[platform] = {
+                "platform": platform,
+                "accounts": [],
+                "total_accounts": 0,
+                "active_accounts": 0,
+                "total_reposts": 0,
+                "total_test_posts": 0
+            }
+        
+        platforms[platform]["accounts"].append(account_data)
+        platforms[platform]["total_accounts"] += 1
+        if account.is_active:
+            platforms[platform]["active_accounts"] += 1
+        platforms[platform]["total_reposts"] += account_data["reposts_count"]
+        platforms[platform]["total_test_posts"] += account_data["test_posts_count"]
+    
+    return {
+        "platforms": platforms,
+        "summary": {
+            "total_accounts": len(accounts),
+            "active_accounts": sum(1 for a in accounts if a.is_active),
+            "platforms_count": len(platforms)
+        }
+    }
+
+
+@router.get("/social-accounts/{account_id}")
+async def get_account_details(account_id: int, db=Depends(get_db)):
+    """
+    Получить детальную информацию об аккаунте
+    """
+    from sqlalchemy import func as sql_func
+    
+    account = db.query(SocialAccountModel).filter(SocialAccountModel.id == account_id).first()
+    
+    if not account:
+        raise HTTPException(status_code=404, detail="Аккаунт не найден")
+    
+    # Получаем статистику репостов для этого аккаунта
+    stats = db.query(
+        sql_func.coalesce(sql_func.sum(StatisticsModel.reposts_count), 0).label('total_reposts'),
+        sql_func.coalesce(sql_func.sum(StatisticsModel.posts_count), 0).label('total_posts')
+    ).filter(StatisticsModel.account_id == account.id).first()
+    
+    return {
+        "id": account.id,
+        "platform": account.platform,
+        "account_name": account.account_name,
+        "is_active": account.is_active,
+        "created_at": account.created_at.isoformat() if account.created_at else None,
+        "updated_at": account.updated_at.isoformat() if account.updated_at else None,
+        "settings": account.settings or {},
+        "reposts_count": int(stats.total_reposts) if stats else 0,
+        "posts_count": int(stats.total_posts) if stats else 0
+    }
+
+
+@router.put("/social-accounts/{account_id}")
+async def update_account(account_id: int, account: SocialAccountCreate, db=Depends(get_db)):
+    """
+    Обновить аккаунт социальной сети
+    """
+    existing_account = db.query(SocialAccountModel).filter(SocialAccountModel.id == account_id).first()
+    
+    if not existing_account:
+        raise HTTPException(status_code=404, detail="Аккаунт не найден")
+    
+    try:
+        existing_account.account_name = account.account_name
+        if account.access_token:
+            existing_account.access_token = account.access_token
+        existing_account.is_active = account.is_active
+        existing_account.settings = account.settings
+        
+        db.commit()
+        db.refresh(existing_account)
+        
+        return {
+            "id": existing_account.id,
+            "platform": existing_account.platform,
+            "account_name": existing_account.account_name,
+            "is_active": existing_account.is_active,
+            "settings": existing_account.settings
+        }
+    except Exception as e:
+        db.rollback()
+        raise HTTPException(status_code=500, detail=f"Ошибка при обновлении аккаунта: {str(e)}")
+
+
+@router.delete("/social-accounts/{account_id}")
+async def delete_account(account_id: int, db=Depends(get_db)):
+    """
+    Удалить аккаунт социальной сети
+    """
+    account = db.query(SocialAccountModel).filter(SocialAccountModel.id == account_id).first()
+    
+    if not account:
+        raise HTTPException(status_code=404, detail="Аккаунт не найден")
+    
+    try:
+        db.delete(account)
+        db.commit()
+        return {"success": True, "message": "Аккаунт успешно удален"}
+    except Exception as e:
+        db.rollback()
+        raise HTTPException(status_code=500, detail=f"Ошибка при удалении аккаунта: {str(e)}")
