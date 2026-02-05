@@ -30,6 +30,17 @@
         .youtube { background-color: #ff0000; }
         .connected { opacity: 1; }
         .disconnected { opacity: 0.5; }
+        
+        /* Стили для формы кросс-постинга */
+        .crosspost-form .form-label {
+            font-weight: 500;
+            margin-bottom: 0.5rem;
+        }
+        
+        .crosspost-form .form-select,
+        .crosspost-form .form-control {
+            margin-bottom: 1rem;
+        }
     </style>
 </head>
 <body>
@@ -120,19 +131,11 @@
                         <h5 class="mb-0">Тестовый репост</h5>
                     </div>
                     <div class="card-body">
-                        <form id="test-post-form">
+                        <form id="test-post-form" class="crosspost-form">
                             <div class="mb-3">
-                                <label for="test-content" class="form-label">Текст поста</label>
-                                <textarea class="form-control" id="test-content" rows="3" placeholder="Введите текст тестового поста..."></textarea>
-                            </div>
-                            <div class="mb-3">
-                                <label for="media-upload" class="form-label">Медиа файлы</label>
-                                <input type="file" class="form-control" id="media-upload" accept="image/*,video/*" multiple>
-                            </div>
-                            <div class="mb-3">
-                                <label for="target-platform" class="form-label">Выберите социальную сеть</label>
-                                <select class="form-select" id="target-platform">
-                                    <option value="" selected>Все подключенные</option>
+                                <label for="source-platform" class="form-label">Источник (откуда брать посты)</label>
+                                <select class="form-select" id="source-platform">
+                                    <option value="" selected disabled>Выберите социальную сеть-источник</option>
                                     <option value="vk">VK</option>
                                     <option value="telegram">Telegram</option>
                                     <option value="instagram">Instagram</option>
@@ -140,10 +143,41 @@
                                     <option value="youtube">YouTube</option>
                                 </select>
                             </div>
-                            <button type="submit" class="btn btn-success">Отправить тестовый репост</button>
+                            <div class="mb-3">
+                                <label for="target-platform" class="form-label">Цель (куда отправлять посты)</label>
+                                <select class="form-select" id="target-platform">
+                                    <option value="" selected disabled>Выберите социальную сеть-получатель</option>
+                                    <option value="vk">VK</option>
+                                    <option value="telegram">Telegram</option>
+                                    <option value="instagram">Instagram</option>
+                                    <option value="pinterest">Pinterest</option>
+                                    <option value="youtube">YouTube</option>
+                                </select>
+                            </div>
+                            <div class="mb-3">
+                                <label for="posts-count" class="form-label">Количество постов для репоста</label>
+                                <input type="number" class="form-control" id="posts-count" min="1" max="10" value="1" placeholder="Введите количество постов">
+                            </div>
+                            <button type="submit" class="btn btn-success">Выполнить репост</button>
                         </form>
                     </div>
                 </div>
+            </div>
+            
+            <div class="col-md-6 mb-4">
+                <div class="card">
+                    <div class="card-header">
+                        <h5 class="mb-0">Посты для репоста</h5>
+                    </div>
+                    <div class="card-body">
+                        <div id="posts-preview" class="border rounded p-3 bg-light">
+                            <p class="text-muted mb-0">Выберите источник и нажмите "Предварительный просмотр", чтобы увидеть посты</p>
+                        </div>
+                        <button type="button" class="btn btn-outline-primary mt-3" id="preview-posts-btn">Предварительный просмотр постов</button>
+                    </div>
+                </div>
+            </div>
+        </div>
             </div>
         </div>
 
@@ -218,57 +252,75 @@
         document.getElementById('test-post-form').addEventListener('submit', function(e) {
             e.preventDefault();
             
-            const content = document.getElementById('test-content').value;
-            const mediaInput = document.getElementById('media-upload');
+            const sourcePlatform = document.getElementById('source-platform').value;
             const targetPlatform = document.getElementById('target-platform').value;
+            const postsCount = document.getElementById('posts-count').value;
             
-            if (!content.trim()) {
-                alert('Пожалуйста, введите текст поста');
+            if (!sourcePlatform) {
+                alert('Пожалуйста, выберите социальную сеть-источник');
                 return;
             }
 
-            // Подготовка данных для отправки
-            const formData = new FormData();
-            formData.append('content', content);
-            formData.append('target_platform', targetPlatform);
-            
-            if (mediaInput.files.length > 0) {
-                for (let i = 0; i < mediaInput.files.length; i++) {
-                    formData.append('media', mediaInput.files[i]);
-                }
+            if (!targetPlatform) {
+                alert('Пожалуйста, выберите социальную сеть-получатель');
+                return;
             }
 
+            if (!postsCount || parseInt(postsCount) < 1) {
+                alert('Пожалуйста, укажите корректное количество постов для репоста');
+                return;
+            }
+
+            // Отправляем запрос на новый эндпоинт
+            sendCrossPost(sourcePlatform, targetPlatform, parseInt(postsCount));
+        });
+
+        // Функция для отправки кросс-поста
+        function sendCrossPost(sourcePlatform, targetPlatform, postsCount) {
+            const postData = {
+                source_platform: sourcePlatform,
+                target_platform: targetPlatform,
+                posts_count: postsCount
+            };
+
             // Отправка запроса
-            fetch('/api/v1/admin/admin/posts/test', {
+            fetch('/api/v1/admin/posts/crosspost', {
                 method: 'POST',
-                body: formData
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify(postData)
             })
-            .then(response => response.json())
+            .then(async response => {
+                // Проверяем статус ответа
+                if (!response.ok) {
+                    // Если ответ не ok, получаем текст ошибки
+                    const errorText = await response.text();
+                    throw new Error(`HTTP error! status: ${response.status}, message: ${errorText}`);
+                }
+                return response.json();
+            })
             .then(data => {
                 if (data.success) {
-                    let message = 'Тестовый пост успешно отправлен';
-                    if (targetPlatform) {
-                        message += ` в ${targetPlatform}`;
-                    } else {
-                        message += ' во все подключенные социальные сети';
-                    }
+                    let message = `Репост успешно выполнен: ${postsCount} пост(ов) из ${sourcePlatform} в ${targetPlatform}`;
                     alert(message + '!');
-                    document.getElementById('test-content').value = '';
-                    document.getElementById('media-upload').value = '';
+                    document.getElementById('source-platform').value = '';
                     document.getElementById('target-platform').value = '';
+                    document.getElementById('posts-count').value = '1';
                 } else {
-                    alert('Ошибка при отправке тестового поста: ' + data.message);
+                    let errorMessage = data.message || data.detail || 'Неизвестная ошибка';
+                    alert('Ошибка при выполнении репоста: ' + errorMessage);
                 }
             })
             .catch(error => {
                 console.error('Error:', error);
-                alert('Произошла ошибка при отправке тестового поста');
+                alert('Произошла ошибка при выполнении репоста: ' + error.message);
             });
-        });
+        }
 
         // Загрузка статистики
         function loadStats() {
-            fetch('/api/v1/admin/admin/statistics/summary')
+            fetch('/api/v1/admin/statistics/summary')
                 .then(response => response.json())
                 .then(data => {
                     document.getElementById('total-posts').textContent = data.total_posts || 0;
@@ -281,7 +333,7 @@
 
         // Проверка подключения аккаунтов
         function checkConnections() {
-            fetch('/api/v1/admin/admin/social-accounts/status')
+            fetch('/api/v1/admin/social-accounts/status')
                 .then(response => response.json())
                 .then(accounts => {
                     console.log('Received accounts:', accounts); // Для отладки
@@ -320,6 +372,88 @@
                 })
                 .catch(error => console.error('Error checking connections:', error));
         }
-    </script>
-</body>
+        
+        // Функция для получения и отображения постов для предварительного просмотра
+        function previewPosts() {
+            const sourcePlatform = document.getElementById('source-platform').value;
+            
+            if (!sourcePlatform) {
+                alert('Пожалуйста, выберите социальную сеть-источник');
+                return;
+            }
+            
+            // Показываем индикатор загрузки
+            const postsPreview = document.getElementById('posts-preview');
+            postsPreview.innerHTML = '<div class="d-flex justify-content-center"><div class="spinner-border" role="status"><span class="visually-hidden">Загрузка...</span></div></div>';
+            
+            // Отправляем запрос на новый эндпоинт для получения постов
+            fetch(`/api/v1/admin/posts/preview?source_platform=${encodeURIComponent(sourcePlatform)}&limit=5`)
+                .then(async response => {
+                    if (!response.ok) {
+                        const errorText = await response.text();
+                        throw new Error(`HTTP error! status: ${response.status}, message: ${errorText}`);
+                    }
+                    return response.json();
+                })
+                .then(data => {
+                    if (data.success && data.posts && data.posts.length > 0) {
+                        let postsHtml = '<div class="posts-list">';
+                        data.posts.forEach((post, index) => {
+                            const truncatedContent = post.content ? (post.content.length > 200 ? post.content.substring(0, 200) + '...' : post.content) : '';
+                            postsHtml += `
+                                <div class="post-item mb-3 p-2 border rounded bg-white">
+                                    <h6>Пост #${index + 1}</h6>
+                                    <p class="mb-1">${truncatedContent || 'Без текста'}</p>
+                                    ${post.media && post.media.length > 0 ? `<img src="${post.media[0]}" class="img-thumbnail" style="max-height: 100px;" alt="Media">` : ''}
+                                </div>
+                            `;
+                        });
+                        postsHtml += '</div>';
+                        postsPreview.innerHTML = postsHtml;
+                    } else {
+                        postsPreview.innerHTML = '<p class="text-muted mb-0">Посты не найдены или произошла ошибка</p>';
+                    }
+                })
+                .catch(error => {
+                    console.error('Error:', error);
+                    postsPreview.innerHTML = `<p class="text-danger mb-0">Ошибка при загрузке постов: ${error.message}</p>`;
+                });
+        }
+        
+        // Добавляем обработчик события для кнопки предварительного просмотра
+        document.addEventListener('DOMContentLoaded', function() {
+            // ... остальной код ...
+            
+            // Обработчик для кнопки предварительного просмотра
+            document.getElementById('preview-posts-btn').addEventListener('click', previewPosts);
+        });
+        
+        // Перемещаем обработчик формы в конец
+        document.getElementById('test-post-form').addEventListener('submit', function(e) {
+            e.preventDefault();
+            
+            const sourcePlatform = document.getElementById('source-platform').value;
+            const targetPlatform = document.getElementById('target-platform').value;
+            const postsCount = document.getElementById('posts-count').value;
+            
+            if (!sourcePlatform) {
+                alert('Пожалуйста, выберите социальную сеть-источник');
+                return;
+            }
+       
+            if (!targetPlatform) {
+                alert('Пожалуйста, выберите социальную сеть-получатель');
+                return;
+            }
+       
+            if (!postsCount || parseInt(postsCount) < 1) {
+                alert('Пожалуйста, укажите корректное количество постов для репоста');
+                return;
+            }
+       
+            // Отправляем запрос на новый эндпоинт
+            sendCrossPost(sourcePlatform, targetPlatform, parseInt(postsCount));
+        });
+            </script>
+        </body>
 </html>

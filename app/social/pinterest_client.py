@@ -32,5 +32,6 @@ class PinterestClient:
             result = self.pinterest.pins.create(pin_data)
             return result if result else {}
         except Exception as e:
-            print(f"Error creating Pinterest pin: {e}")
-            return {}
+            error_message = str(e) if str(e) != "None" else "Неизвестная ошибка при создании пина в Pinterest"
+            print(f"Error creating Pinterest pin: {error_message}")
+            return {"error": error_message}

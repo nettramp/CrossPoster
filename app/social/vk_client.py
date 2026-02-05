@@ -17,7 +17,7 @@ class VKClient:
             print(f"Error getting VK posts: {e}")
             return []
     
-    def post_to_wall(self, owner_id: str, message: str, attachments: Optional[List[str]] = None) -> Dict:
+    def post_to_wall(self, owner_id: str, message: str, media_urls: Optional[List[str]] = None) -> Dict:
         """Опубликовать пост в VK"""
         try:
             post_data = {
@@ -25,14 +25,32 @@ class VKClient:
                 'message': message
             }
             
+            attachments = []
+            if media_urls:
+                # Обработка URL-адресов медиафайлов
+                import uuid
+                from app.utils.media_downloader import download_media, get_file_extension
+                
+                for media_url in media_urls:
+                    file_extension = get_file_extension(media_url)
+                    temp_filename = f"/tmp/{uuid.uuid4()}.{file_extension}"
+                    
+                    downloaded_path = download_media(media_url, temp_filename)
+                    if downloaded_path:
+                        # Загружаем в VK
+                        attachment = self.upload_photo(downloaded_path, owner_id.lstrip('-'))  # Убираем минус из ID группы
+                        if attachment:
+                            attachments.append(attachment)
+            
             if attachments:
                 post_data['attachments'] = ','.join(attachments)
             
             result = self.vk.wall.post(**post_data)
             return result
         except Exception as e:
-            print(f"Error posting to VK: {e}")
-            return {}
+            error_message = str(e) if str(e) != "None" else "Неизвестная ошибка при публикации в VK"
+            print(f"Error posting to VK: {error_message}")
+            return {"error": error_message}
     
     def upload_photo(self, photo_path: str, group_id: Optional[str] = None) -> str:
         """Загрузить фото в VK и вернуть attachment строку"""

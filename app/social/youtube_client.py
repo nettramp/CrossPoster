@@ -70,5 +70,6 @@ class YouTubeClient:
                 'url': f"https://www.youtube.com/shorts/{response['id']}"
             }
         except Exception as e:
-            print(f"Error uploading YouTube short: {e}")
-            return {}
+            error_message = str(e) if str(e) != "None" else "Неизвестная ошибка при загрузке видео в YouTube"
+            print(f"Error uploading YouTube short: {error_message}")
+            return {"error": error_message}

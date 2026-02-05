@@ -77,7 +77,10 @@ nano .env  # Отредактируйте файл и укажите свои AP
 DATABASE_URL=postgresql://crossposter:strong_password_here@localhost:5432/crossposter
 REDIS_URL=redis://localhost:6379/0
 SECRET_KEY=very_strong_secret_key_here
+ENCRYPTION_KEY=your_encryption_key_here
 ```
+
+**Важно:** Переменная `ENCRYPTION_KEY` должна быть установлена и сохранена неизменной, так как она используется для шифрования и расшифровки API-токенов. Если ключ изменится, все ранее сохраненные токены станут недействительными.
 
 ### 6. Запуск миграций базы данных
 

@@ -262,7 +262,7 @@
 
         // Загрузка детальной информации об аккаунтах
         function loadDetailedAccounts() {
-            fetch('/api/v1/admin/admin/social-accounts/detailed')
+            fetch('/api/v1/admin/social-accounts/detailed')
                 .then(response => response.json())
                 .then(data => {
                     // Обновляем общую статистику

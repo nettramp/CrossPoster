@@ -38,13 +38,54 @@ class TelegramClient:
         """Опубликовать пост в Telegram канал"""
         try:
             if media:
-                # Публикация с медиа
-                if media[0].endswith(('.jpg', '.jpeg', '.png')):
-                    result = await self.bot.send_photo(chat_id=chat_id, photo=media[0], caption=text)
-                elif media[0].endswith(('.mp4', '.mov')):
-                    result = await self.bot.send_video(chat_id=chat_id, video=media[0], caption=text)
+                # Публикация с медиа - обрабатываем только первое медиа, т.к. Telegram не поддерживает альбомы в этом методе
+                media_item = media[0]  # Берем первое медиа
+                # Telegram Bot API позволяет напрямую использовать URL-адреса, но для надежности скачаем файл
+                if media_item.startswith(('http://', 'https://')):
+                    # Это URL, скачиваем файл локально для отправки
+                    import uuid
+                    from app.utils.media_downloader import download_media, get_file_extension
+                    
+                    file_extension = get_file_extension(media_item)
+                    temp_filename = f"/tmp/{uuid.uuid4()}.{file_extension}"
+                    
+                    downloaded_path = download_media(media_item, temp_filename)
+                    if downloaded_path:
+                        with open(downloaded_path, 'rb') as f:
+                            if media_item.lower().endswith(('.jpg', '.jpeg', '.png', '.gif')):
+                                result = await self.bot.send_photo(chat_id=chat_id, photo=f, caption=text)
+                            elif media_item.lower().endswith(('.mp4', '.mov', '.avi')):
+                                result = await self.bot.send_video(chat_id=chat_id, video=f, caption=text)
+                            else:
+                                result = await self.bot.send_document(chat_id=chat_id, document=f, caption=text)
+                        # Удаляем временный файл после отправки
+                        import os
+                        os.unlink(downloaded_path)
+                    else:
+                        # Если не удалось скачать, пробуем отправить URL напрямую
+                        if media_item.lower().endswith(('.jpg', '.jpeg', '.png', '.gif')):
+                            result = await self.bot.send_photo(chat_id=chat_id, photo=media_item, caption=text)
+                        elif media_item.lower().endswith(('.mp4', '.mov', '.avi')):
+                            result = await self.bot.send_video(chat_id=chat_id, video=media_item, caption=text)
+                        else:
+                            result = await self.bot.send_document(chat_id=chat_id, document=media_item, caption=text)
+                elif media_item.startswith('/tmp/') or media_item.startswith('./'):
+                    # Это локальный файл, отправляем его
+                    with open(media_item, 'rb') as f:
+                        if media_item.lower().endswith(('.jpg', '.jpeg', '.png', '.gif')):
+                            result = await self.bot.send_photo(chat_id=chat_id, photo=f, caption=text)
+                        elif media_item.lower().endswith(('.mp4', '.mov', '.avi')):
+                            result = await self.bot.send_video(chat_id=chat_id, video=f, caption=text)
+                        else:
+                            result = await self.bot.send_document(chat_id=chat_id, document=f, caption=text)
                 else:
-                    result = await self.bot.send_document(chat_id=chat_id, document=media[0], caption=text)
+                    # Это file_id или другой формат
+                    if media_item.endswith(('.jpg', '.jpeg', '.png', '.gif')):
+                        result = await self.bot.send_photo(chat_id=chat_id, photo=media_item, caption=text)
+                    elif media_item.endswith(('.mp4', '.mov', '.avi')):
+                        result = await self.bot.send_video(chat_id=chat_id, video=media_item, caption=text)
+                    else:
+                        result = await self.bot.send_document(chat_id=chat_id, document=media_item, caption=text)
             else:
                 # Публикация только текста
                 result = await self.bot.send_message(chat_id=chat_id, text=text)
@@ -54,5 +95,6 @@ class TelegramClient:
                 'date': result.date
             }
         except TelegramError as e:
-            print(f"Error posting to Telegram: {e}")
-            return {}
+            error_message = str(e) if str(e) != "None" else "Неизвестная ошибка при публикации в Telegram"
+            print(f"Error posting to Telegram: {error_message}")
+            return {"error": error_message}

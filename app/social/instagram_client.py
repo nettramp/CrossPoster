@@ -47,8 +47,9 @@ class InstagramClient:
                 'url': f"https://www.instagram.com/p/{result.code}/"
             }
         except Exception as e:
-            print(f"Error posting photo to Instagram: {e}")
-            return {}
+            error_message = str(e) if str(e) != "None" else "Неизвестная ошибка при публикации в Instagram"
+            print(f"Error posting photo to Instagram: {error_message}")
+            return {"error": error_message}
     
     def post_video(self, video_path: str, caption: str, thumbnail_path: Optional[str] = None) -> Dict:
         """Опубликовать видео в Instagram"""
