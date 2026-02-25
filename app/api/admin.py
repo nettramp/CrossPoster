@@ -17,6 +17,7 @@ from app.schemas.post import PostCreate, Post as PostSchema
 from app.schemas.statistics import StatisticsCreate, Statistics as StatisticsSchema
 from app.database import SessionLocal, engine
 from app.core.config import settings
+from app.core.security import hash_password
 from app.social.vk_client import VKClient
 from app.social.telegram_client import TelegramClient
 from app.social.instagram_client import InstagramClient
@@ -33,15 +34,38 @@ def get_db():
     finally:
         db.close()
 
+
+def run_async(coro):
+    """Безопасное выполнение async функции в синхронном контексте"""
+    try:
+        # Пробуем получить запущенный loop
+        loop = asyncio.get_running_loop()
+    except RuntimeError:
+        # Нет запущенного loop - создаём новый
+        loop = asyncio.new_event_loop()
+        asyncio.set_event_loop(loop)
+        try:
+            return loop.run_until_complete(coro)
+        finally:
+            loop.close()
+    else:
+        # Loop уже запущен - создаём task и ждём её результат
+        import concurrent.futures
+        with concurrent.futures.ThreadPoolExecutor() as executor:
+            future = executor.submit(asyncio.run, coro)
+            return future.result()
+
+
 def get_or_create_default_user(db):
     """Получить или создать пользователя по умолчанию"""
     user = db.query(UserModel).filter(UserModel.id == 1).first()
     if not user:
+        password_hash = hash_password("admin_password")
         user = UserModel(
             id=1,
             username="admin",
             email="admin@crossposter.local",
-            password_hash="not_used"
+            password_hash=password_hash
         )
         db.add(user)
         db.commit()
@@ -211,14 +235,9 @@ async def crosspost_posts(
                 
         elif source_platform == 'telegram':
             telegram_client = TelegramClient(source_account.access_token)
-            
-            # Асинхронный вызов в синхронной функции
-            loop = asyncio.new_event_loop()
-            asyncio.set_event_loop(loop)
-            posts = loop.run_until_complete(
+            posts = run_async(
                 telegram_client.get_latest_posts(str(source_account.settings.get('chat_id', '')), limit=posts_count)
             )
-            loop.close()
             
             for post in posts:
                 post_content = post.get('text', '')
@@ -308,18 +327,13 @@ async def crosspost_posts(
                 
             elif target_platform == 'telegram':
                 telegram_client = TelegramClient(target_account.access_token)
-                
-                # Асинхронный вызов в синхронной функции
-                loop = asyncio.new_event_loop()
-                asyncio.set_event_loop(loop)
-                result = loop.run_until_complete(
+                result = run_async(
                     telegram_client.post_to_channel(
                         chat_id=str(target_account.settings.get('channel', '')),
                         text=post_data['content'],
                         media=post_data.get('media', [])
                     )
                 )
-                loop.close()
                 results.append(result)
                 
             elif target_platform == 'instagram':
@@ -333,17 +347,29 @@ async def crosspost_posts(
                     
                     # Instagram требует медиафайл для публикации
                     if post_data.get('media'):
+                        from app.utils.media_downloader import download_media, get_file_extension
+                        
                         media_url = post_data['media'][0]  # берем первое медиа
+                        
+                        # Скачиваем медиафайл для Instagram
+                        file_extension = get_file_extension(media_url)
+                        temp_filename = f"/tmp/{uuid.uuid4()}.{file_extension}"
+                        downloaded_path = download_media(media_url, temp_filename)
+                        
+                        if not downloaded_path:
+                            results.append({'error': 'Не удалось скачать медиафайл для Instagram'})
+                            continue
+                        
                         if media_url.endswith(('.mp4', '.mov', '.avi')):
                             # Это видео
                             result = instagram_client.post_video(
-                                video_path=media_url,
+                                video_path=downloaded_path,
                                 caption=post_data['content']
                             )
                         else:
                             # Это фото
                             result = instagram_client.post_photo(
-                                photo_path=media_url,
+                                photo_path=downloaded_path,
                                 caption=post_data['content']
                             )
                         results.append(result)
@@ -442,6 +468,15 @@ async def preview_posts(
            # Получаем последние посты из VK
            posts = vk_client.get_latest_posts(str(source_account.settings.get('owner_id', '')), count=limit)
            for post in posts:
+               # Проверяем, есть ли ошибка в посте
+               if 'error' in post:
+                   posts_preview.append({
+                       'content': '',
+                       'media': [],
+                       'error': post['error']
+                   })
+                   continue
+               
                post_content = post.get('text', '')
                post_media = []
                
@@ -459,16 +494,20 @@ async def preview_posts(
                
        elif source_platform == 'telegram':
            telegram_client = TelegramClient(source_account.access_token)
-           
-           # Асинхронный вызов в синхронной функции
-           loop = asyncio.new_event_loop()
-           asyncio.set_event_loop(loop)
-           posts = loop.run_until_complete(
+           posts = run_async(
                telegram_client.get_latest_posts(str(source_account.settings.get('chat_id', '')), limit=limit)
            )
-           loop.close()
            
            for post in posts:
+               # Проверяем, есть ли ошибка в посте
+               if 'error' in post:
+                   posts_preview.append({
+                       'content': '',
+                       'media': [],
+                       'error': post['error']
+                   })
+                   continue
+               
                post_content = post.get('text', '')
                post_media = [post.get('media_url')] if post.get('media_url') else []
                
@@ -487,6 +526,15 @@ async def preview_posts(
                count=limit
            )
            for post in posts:
+               # Проверяем, есть ли ошибка в посте
+               if 'error' in post:
+                   posts_preview.append({
+                       'content': '',
+                       'media': [],
+                       'error': post['error']
+                   })
+                   continue
+               
                post_content = post.get('caption', '')
                post_media = [post.get('media_url')] if post.get('media_url') else []
                
@@ -502,6 +550,15 @@ async def preview_posts(
                count=limit
            )
            for post in posts:
+               # Проверяем, есть ли ошибка в посте
+               if 'error' in post:
+                   posts_preview.append({
+                       'content': '',
+                       'media': [],
+                       'error': post['error']
+                   })
+                   continue
+               
                post_content = post.get('description', '')
                post_media = [post.get('image_url')] if post.get('image_url') else []
                
@@ -517,6 +574,15 @@ async def preview_posts(
                count=limit
            )
            for post in posts:
+               # Проверяем, есть ли ошибка в посте
+               if 'error' in post:
+                   posts_preview.append({
+                       'content': '',
+                       'media': [],
+                       'error': post['error']
+                   })
+                   continue
+               
                post_content = post.get('title', '') + '\n' + post.get('description', '')
                post_media = [post.get('thumbnail_url')] if post.get('thumbnail_url') else []
                
@@ -620,7 +686,7 @@ async def create_or_update_social_account(account: SocialAccountCreate, db=Depen
                 platform=account.platform,
                 account_name=account.account_name,
                 access_token=account.access_token,  # будет зашифрован автоматически через модель
-                is_active=account.is_active or True,
+                is_active=account.is_active if account.is_active is not None else True,
                 user_id=user_id,
                 settings=account.settings
             )
@@ -797,3 +863,54 @@ async def delete_account(account_id: int, db=Depends(get_db)):
     except Exception as e:
         db.rollback()
         raise HTTPException(status_code=500, detail=f"Ошибка при удалении аккаунта: {str(e)}")
+
+
+@router.post("/social-accounts/{account_id}/validate")
+async def validate_account_token(account_id: int, db=Depends(get_db)):
+    """
+    Проверить валидность токена социального аккаунта
+    """
+    account = db.query(SocialAccountModel).filter(SocialAccountModel.id == account_id).first()
+    
+    if not account:
+        raise HTTPException(status_code=404, detail="Аккаунт не найден")
+    
+    platform = account.platform.lower()
+    
+    try:
+        if platform == 'vk':
+            vk_client = VKClient(account.access_token)
+            result = vk_client.validate_token()
+            return result
+            
+        elif platform == 'telegram':
+            # Для Telegram проверяем токен бота через Bot API
+            telegram_client = TelegramClient(account.access_token)
+            result = run_async(telegram_client.validate_token())
+            return result
+            
+        elif platform == 'instagram':
+            # Для Instagram пытаемся выполнить вход
+            credentials = account.access_token.split(':')
+            if len(credentials) >= 2:
+                instagram_client = InstagramClient(username=credentials[0], password=credentials[1])
+                result = instagram_client.validate_token()
+                return result
+            else:
+                return {"valid": False, "error": "Неверный формат учетных данных (ожидается логин:пароль)"}
+                
+        elif platform == 'pinterest':
+            pinterest_client = PinterestClient(account.access_token)
+            result = pinterest_client.validate_token()
+            return result
+            
+        elif platform == 'youtube':
+            youtube_client = YouTubeClient(account.access_token)
+            result = youtube_client.validate_token()
+            return result
+            
+        else:
+            return {"valid": False, "error": f"Проверка токена для {platform} не поддерживается"}
+            
+    except Exception as e:
+        return {"valid": False, "error": str(e), "message": "Ошибка при проверке токена"}

@@ -12,12 +12,12 @@ google-api-python-client==2.111.0
 pinterest-api==0.0.8
 alembic==1.13.1
 pydantic==1.10.5
+passlib[bcrypt]==1.7.4
 # Закомментировано из-за конфликта зависимостей
 # pydantic-settings==2.0.3
 jinja2==3.1.2
 apscheduler==3.10.4
 python-multipart==0.0.6
-jinja2==3.1.2
 # Заменено на python-dotenv для избежания конфликтов
 python-dotenv==1.0.0
 Pillow==10.1.0

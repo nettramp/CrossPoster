@@ -7,67 +7,123 @@ class VKClient:
         self.access_token = access_token
         self.vk_session = vk_api.VkApi(token=access_token)
         self.vk = self.vk_session.get_api()
-    
+
     def get_latest_posts(self, owner_id: str, count: int = 10) -> List[Dict]:
         """Получить последние посты из VK"""
         try:
             posts = self.vk.wall.get(owner_id=owner_id, count=count)
             return posts['items']
         except Exception as e:
-            print(f"Error getting VK posts: {e}")
-            return []
-    
-    def post_to_wall(self, owner_id: str, message: str, media_urls: Optional[List[str]] = None) -> Dict:
-        """Опубликовать пост в VK"""
+            error_message = str(e) if str(e) != "None" else "Неизвестная ошибка при получении постов из VK"
+            print(f"Error getting VK posts: {error_message}")
+            return [{"error": error_message}]
+
+    def validate_token(self) -> Dict:
+        """Проверить валидность токена VK"""
+        try:
+            # Получаем информацию о пользователе
+            profile_info = self.vk.account.getProfileInfo()
+            return {
+                "valid": True,
+                "user_id": profile_info.get("id"),
+                "first_name": profile_info.get("first_name"),
+                "last_name": profile_info.get("last_name"),
+                "screen_name": profile_info.get("screen_name"),
+                "message": "Токен валиден"
+            }
+        except vk_api.exceptions.VkApiError as e:
+            error_code = e.code if hasattr(e, 'code') else None
+            error_msg = str(e)
+
+            if error_code == 5:
+                return {
+                    "valid": False,
+                    "error": "Недействительный токен",
+                    "message": "Токен истёк или неверен"
+                }
+            elif error_code == 15:
+                return {
+                    "valid": False,
+                    "error": "Доступ запрещён",
+                    "message": "Нет доступа к профилю"
+                }
+            else:
+                return {
+                    "valid": False,
+                    "error": f"Ошибка VK API (код {error_code})",
+                    "message": error_msg
+                }
+        except Exception as e:
+            return {
+                "valid": False,
+                "error": "Ошибка проверки токена",
+                "message": str(e)
+            }
+
+    def post_to_wall(
+        self,
+        owner_id: str,
+        message: str,
+        attachments: Optional[List[str]] = None,
+        media_urls: Optional[List[str]] = None,
+    ) -> Dict:
+        """
+        Опубликовать пост в VK.
+
+        Параметры:
+            owner_id    — ID владельца стены (группа со знаком «-» или пользователь).
+            message     — Текст поста.
+            attachments — Уже готовые attachment-строки вида «photo-123_456».
+            media_urls  — URL медиафайлов, которые нужно скачать и загрузить в VK.
+                          Если переданы оба параметра, media_urls обрабатываются первыми
+                          и добавляются к attachments.
+        """
         try:
             post_data = {
                 'owner_id': owner_id,
-                'message': message
+                'message': message,
             }
-            
-            attachments = []
+
+            all_attachments = list(attachments) if attachments else []
+
             if media_urls:
-                # Обработка URL-адресов медиафайлов
                 import uuid
                 from app.utils.media_downloader import download_media, get_file_extension
-                
+
+                # Убираем минус из ID группы для загрузки фото
+                group_id = owner_id.lstrip('-') if owner_id.startswith('-') else None
+
                 for media_url in media_urls:
                     file_extension = get_file_extension(media_url)
                     temp_filename = f"/tmp/{uuid.uuid4()}.{file_extension}"
-                    
+
                     downloaded_path = download_media(media_url, temp_filename)
                     if downloaded_path:
-                        # Загружаем в VK
-                        attachment = self.upload_photo(downloaded_path, owner_id.lstrip('-'))  # Убираем минус из ID группы
+                        attachment = self.upload_photo(downloaded_path, group_id)
                         if attachment:
-                            attachments.append(attachment)
-            
-            if attachments:
-                post_data['attachments'] = ','.join(attachments)
-            
+                            all_attachments.append(attachment)
+
+            if all_attachments:
+                post_data['attachments'] = ','.join(all_attachments)
+
             result = self.vk.wall.post(**post_data)
             return result
         except Exception as e:
             error_message = str(e) if str(e) != "None" else "Неизвестная ошибка при публикации в VK"
             print(f"Error posting to VK: {error_message}")
             return {"error": error_message}
-    
+
     def upload_photo(self, photo_path: str, group_id: Optional[str] = None) -> str:
         """Загрузить фото в VK и вернуть attachment строку"""
         try:
+            upload = vk_api.VkUpload(self.vk_session)
             if group_id:
-                upload = vk_api.VkUpload(self.vk_session)
                 photo = upload.photo_wall(photo_path, group_id=group_id)
-                owner_id = photo[0]['owner_id']
-                photo_id = photo[0]['id']
-                return f'photo{owner_id}_{photo_id}'
             else:
-                # Загрузка на стену пользователя
-                upload = vk_api.VkUpload(self.vk_session)
                 photo = upload.photo_wall(photo_path)
-                owner_id = photo[0]['owner_id']
-                photo_id = photo[0]['id']
-                return f'photo{owner_id}_{photo_id}'
+            owner_id = photo[0]['owner_id']
+            photo_id = photo[0]['id']
+            return f'photo{owner_id}_{photo_id}'
         except Exception as e:
             print(f"Error uploading photo to VK: {e}")
             return ""

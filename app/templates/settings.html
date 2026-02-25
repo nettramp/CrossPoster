@@ -405,7 +405,8 @@
 
         // Открытие модального окна для редактирования аккаунта
         function openAccountModal(accountId, platformKey) {
-            fetch(`/api/v1/admin/admin/social-accounts/${accountId}`)
+            // Загружаем данные аккаунта по корректному API-эндпоинту
+            fetch(`/api/v1/admin/social-accounts/${accountId}`)
                 .then(response => response.json())
                 .then(account => {
                     currentAccountData = account;
@@ -486,7 +487,8 @@
                 data.access_token = accessToken;
             }
             
-            fetch(`/api/v1/admin/admin/social-accounts/${accountId}`, {
+            // Отправляем обновлённые данные аккаунта
+            fetch(`/api/v1/admin/social-accounts/${accountId}`, {
                 method: 'PUT',
                 headers: {
                     'Content-Type': 'application/json'
@@ -518,7 +520,8 @@
             const accountName = document.getElementById('edit-account-name').value;
             
             if (confirm(`Вы уверены, что хотите удалить аккаунт "${accountName}"? Это действие нельзя отменить.`)) {
-                fetch(`/api/v1/admin/admin/social-accounts/${accountId}`, {
+                // Удаляем аккаунт по корректному API-эндпоинту
+                fetch(`/api/v1/admin/social-accounts/${accountId}`, {
                     method: 'DELETE'
                 })
                 .then(response => {

@@ -35,7 +35,7 @@ if __name__ == "__main__":
     
     try:
         # Держим приложение запущенным
-        asyncio.get_event_loop().run_forever()
+        asyncio.run(asyncio.sleep(float('inf')))
     except KeyboardInterrupt:
         logger.info("Scheduler stopped")
         scheduler.shutdown()

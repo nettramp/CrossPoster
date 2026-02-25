@@ -63,6 +63,11 @@
                         <button class="btn {% if 'vk' in connected_platforms %}btn-success{% else %}btn-outline-primary{% endif %}" data-bs-toggle="modal" data-bs-target="#vkModal">
                             {% if 'vk' in connected_platforms %}Изменить{% else %}Настроить{% endif %}
                         </button>
+                        {% if 'vk' in connected_platforms %}
+                        <button class="btn btn-outline-info btn-sm mt-2" onclick="validateToken('vk')">
+                            <i class="fas fa-check-circle"></i> Проверить токен
+                        </button>
+                        {% endif %}
                     </div>
                 </div>
             </div>
@@ -78,6 +83,11 @@
                         <button class="btn {% if 'telegram' in connected_platforms %}btn-success{% else %}btn-outline-primary{% endif %}" data-bs-toggle="modal" data-bs-target="#telegramModal">
                             {% if 'telegram' in connected_platforms %}Изменить{% else %}Настроить{% endif %}
                         </button>
+                        {% if 'telegram' in connected_platforms %}
+                        <button class="btn btn-outline-info btn-sm mt-2" onclick="validateToken('telegram')">
+                            <i class="fas fa-check-circle"></i> Проверить токен
+                        </button>
+                        {% endif %}
                     </div>
                 </div>
             </div>
@@ -93,6 +103,11 @@
                         <button class="btn {% if 'instagram' in connected_platforms %}btn-success{% else %}btn-outline-primary{% endif %}" data-bs-toggle="modal" data-bs-target="#instagramModal">
                             {% if 'instagram' in connected_platforms %}Изменить{% else %}Настроить{% endif %}
                         </button>
+                        {% if 'instagram' in connected_platforms %}
+                        <button class="btn btn-outline-info btn-sm mt-2" onclick="validateToken('instagram')">
+                            <i class="fas fa-check-circle"></i> Проверить токен
+                        </button>
+                        {% endif %}
                     </div>
                 </div>
             </div>
@@ -108,6 +123,11 @@
                         <button class="btn {% if 'pinterest' in connected_platforms %}btn-success{% else %}btn-outline-primary{% endif %}" data-bs-toggle="modal" data-bs-target="#pinterestModal">
                             {% if 'pinterest' in connected_platforms %}Изменить{% else %}Настроить{% endif %}
                         </button>
+                        {% if 'pinterest' in connected_platforms %}
+                        <button class="btn btn-outline-info btn-sm mt-2" onclick="validateToken('pinterest')">
+                            <i class="fas fa-check-circle"></i> Проверить токен
+                        </button>
+                        {% endif %}
                     </div>
                 </div>
             </div>
@@ -123,6 +143,11 @@
                         <button class="btn {% if 'youtube' in connected_platforms %}btn-success{% else %}btn-outline-primary{% endif %}" data-bs-toggle="modal" data-bs-target="#youtubeModal">
                             {% if 'youtube' in connected_platforms %}Изменить{% else %}Настроить{% endif %}
                         </button>
+                        {% if 'youtube' in connected_platforms %}
+                        <button class="btn btn-outline-info btn-sm mt-2" onclick="validateToken('youtube')">
+                            <i class="fas fa-check-circle"></i> Проверить токен
+                        </button>
+                        {% endif %}
                     </div>
                 </div>
             </div>
@@ -308,7 +333,8 @@
     <script>
         // Функция для отправки данных аккаунта
         function saveAccount(data, successMessage) {
-            fetch('/api/v1/admin/admin/social-accounts/', {
+            // Отправляем данные на API для создания/обновления аккаунта
+            fetch('/api/v1/admin/social-accounts/', {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json'
@@ -433,6 +459,51 @@
             
             saveAccount(data, 'YouTube аккаунт успешно сохранен!');
         });
+        
+        // Функция для проверки токена
+        async function validateToken(platform) {
+            // Сначала получаем список аккаунтов
+            try {
+                const response = await fetch('/api/v1/admin/social-accounts/status');
+                const accounts = await response.json();
+                
+                // Находим аккаунт для указанной платформы
+                const account = Array.isArray(accounts) 
+                    ? accounts.find(a => a.platform.toLowerCase() === platform.toLowerCase())
+                    : null;
+                
+                if (!account) {
+                    alert('Аккаунт для ' + platform + ' не найден');
+                    return;
+                }
+                
+                // Отправляем запрос на проверку токена
+                const validateResponse = await fetch(`/api/v1/admin/social-accounts/${account.id}/validate`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    }
+                });
+                
+                const result = await validateResponse.json();
+                
+                if (result.valid) {
+                    let message = '✅ Токен валиден!\n\n';
+                    if (result.user_id) message += 'ID пользователя: ' + result.user_id + '\n';
+                    if (result.first_name) message += 'Имя: ' + result.first_name + '\n';
+                    if (result.last_name) message += 'Фамилия: ' + result.last_name + '\n';
+                    if (result.username) message += 'Username: ' + result.username + '\n';
+                    if (result.bot_name) message += 'Бот: ' + result.bot_name + '\n';
+                    if (result.channel_title) message += 'Канал: ' + result.channel_title + '\n';
+                    alert(message);
+                } else {
+                    alert('❌ Ошибка проверки токена\n\n' + (result.error || result.message || 'Неизвестная ошибка'));
+                }
+            } catch (error) {
+                console.error('Error validating token:', error);
+                alert('Произошла ошибка при проверке токена: ' + error.message);
+            }
+        }
     </script>
 </body>
 </html>

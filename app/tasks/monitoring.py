@@ -1,4 +1,5 @@
 import asyncio
+import uuid
 from celery import Celery
 from app.core.config import settings
 from app.social.vk_client import VKClient
@@ -6,10 +7,21 @@ from app.social.telegram_client import TelegramClient
 from app.social.instagram_client import InstagramClient
 from app.social.pinterest_client import PinterestClient
 from app.social.youtube_client import YouTubeClient
+from app.utils.media_downloader import download_media, get_file_extension
 
 # Инициализация Celery
 celery_app = Celery("crossposter", broker=settings.redis_url)
 
+
+def run_async(coro):
+    """Безопасное выполнение async функции в синхронном контексте"""
+    loop = asyncio.new_event_loop()
+    asyncio.set_event_loop(loop)
+    try:
+        return loop.run_until_complete(coro)
+    finally:
+        loop.close()
+        
 @celery_app.task
 def check_vk_posts(account_id: int, access_token: str, owner_id: str):
     """Проверить новые посты в VK"""
@@ -54,12 +66,7 @@ def check_telegram_posts(account_id: int, bot_token: str, chat_id: str):
     """Проверить новые посты в Telegram"""
     try:
         telegram_client = TelegramClient(bot_token)
-        
-        # Асинхронный вызов в синхронной функции
-        loop = asyncio.new_event_loop()
-        asyncio.set_event_loop(loop)
-        posts = loop.run_until_complete(telegram_client.get_latest_posts(chat_id, limit=5))
-        loop.close()
+        posts = run_async(telegram_client.get_latest_posts(chat_id, limit=5))
         
         # TODO: Проверить, какие посты уже были обработаны
         # TODO: Отправить новые посты в очередь для репоста
@@ -86,6 +93,8 @@ def check_instagram_posts(account_id: int, username: str, password: str, user_id
 def repost_to_vk(post_data: dict, access_token: str, owner_id: str):
     """Репостить контент в VK"""
     try:
+        from app.utils.media_downloader import download_media, get_file_extension
+        
         vk_client = VKClient(access_token)
         
         # Обрабатываем медиафайлы
@@ -93,9 +102,6 @@ def repost_to_vk(post_data: dict, access_token: str, owner_id: str):
         if 'media' in post_data and post_data['media']:
             for media_item in post_data['media']:
                 # Скачиваем медиафайл
-                import uuid
-                from app.utils.media_downloader import download_media, get_file_extension
-                
                 file_extension = get_file_extension(media_item)
                 temp_filename = f"/tmp/{uuid.uuid4()}.{file_extension}"
                 
@@ -147,9 +153,6 @@ def send_test_post_to_all_platforms(post_data: dict, accounts_data: list):
                     for media_url in post_data['media']:
                         print(f"Downloading media for VK: {media_url}")
                         # Скачиваем и загружаем медиа в VK
-                        import uuid
-                        from app.utils.media_downloader import download_media, get_file_extension
-                        
                         file_extension = get_file_extension(media_url)
                         temp_filename = f"/tmp/{uuid.uuid4()}.{file_extension}"
                         
@@ -189,17 +192,13 @@ def send_test_post_to_all_platforms(post_data: dict, accounts_data: list):
                     continue
                 
                 print(f"Sending post to Telegram with message: {post_data['content'][:50]}... and {len(post_data.get('media', []))} media files")
-                # Используем асинхронный вызов в синхронной функции
-                loop = asyncio.new_event_loop()
-                asyncio.set_event_loop(loop)
-                result = loop.run_until_complete(
+                result = run_async(
                     telegram_client.post_to_channel(
                         chat_id=str(settings.get('channel')),
                         text=post_data['content'],
                         media=post_data.get('media')
                     )
                 )
-                loop.close()
                 
                 if 'error' in result:
                     print(f"Telegram post failed: {result['error']}")
@@ -224,18 +223,34 @@ def send_test_post_to_all_platforms(post_data: dict, accounts_data: list):
                 
                 # Проверяем тип медиа и вызываем соответствующий метод
                 if post_data.get('media'):
+                    from app.utils.media_downloader import download_media, get_file_extension
+                    
                     media_url = post_data['media'][0]  # берем первое медиа
                     print(f"Sending post to Instagram with media: {media_url}")
+                    
+                    # Скачиваем медиафайл для Instagram
+                    file_extension = get_file_extension(media_url)
+                    temp_filename = f"/tmp/{uuid.uuid4()}.{file_extension}"
+                    downloaded_path = download_media(media_url, temp_filename)
+                    
+                    if not downloaded_path:
+                        error_msg = "Не удалось скачать медиафайл для Instagram"
+                        print(error_msg)
+                        results[f"instagram_{account['id']}"] = {"success": False, "error": error_msg}
+                        continue
+                    
+                    print(f"Downloaded media to: {downloaded_path}")
+                    
                     if media_url.endswith(('.mp4', '.mov', '.avi')):
                         # Это видео
                         result = instagram_client.post_video(
-                            video_path=media_url,
+                            video_path=downloaded_path,
                             caption=post_data['content']
                         )
                     else:
                         # Это фото
                         result = instagram_client.post_photo(
-                            photo_path=media_url,
+                            photo_path=downloaded_path,
                             caption=post_data['content']
                         )
                 else:
@@ -324,17 +339,9 @@ def repost_to_telegram(post_data: dict, bot_token: str, chat_id: str):
     """Репостить контент в Telegram"""
     try:
         telegram_client = TelegramClient(bot_token)
-        
-        # Асинхронный вызов в синхронной функции
-        loop = asyncio.new_event_loop()
-        asyncio.set_event_loop(loop)
-        result = loop.run_until_complete(
+        result = run_async(
             telegram_client.post_to_channel(chat_id, post_data['text'], post_data.get('media'))
         )
-        
-        # Обрабатываем медиафайлы для Telegram
-        # (уже реализовано в telegram_client.py)
-        loop.close()
         
         return {"status": "success", "result": result}
     except Exception as e:

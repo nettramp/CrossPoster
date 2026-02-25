@@ -396,20 +396,56 @@
                     return response.json();
                 })
                 .then(data => {
-                    if (data.success && data.posts && data.posts.length > 0) {
-                        let postsHtml = '<div class="posts-list">';
-                        data.posts.forEach((post, index) => {
-                            const truncatedContent = post.content ? (post.content.length > 200 ? post.content.substring(0, 200) + '...' : post.content) : '';
-                            postsHtml += `
-                                <div class="post-item mb-3 p-2 border rounded bg-white">
-                                    <h6>Пост #${index + 1}</h6>
-                                    <p class="mb-1">${truncatedContent || 'Без текста'}</p>
-                                    ${post.media && post.media.length > 0 ? `<img src="${post.media[0]}" class="img-thumbnail" style="max-height: 100px;" alt="Media">` : ''}
-                                </div>
-                            `;
-                        });
-                        postsHtml += '</div>';
-                        postsPreview.innerHTML = postsHtml;
+                    // Проверяем, есть ли ошибка в ответе
+                    if (!data.success) {
+                        postsPreview.innerHTML = `<p class="text-danger mb-0">Ошибка: ${data.detail || 'Неизвестная ошибка'}</p>`;
+                        return;
+                    }
+                    
+                    if (data.posts && data.posts.length > 0) {
+                        // Проверяем, есть ли ошибки в постах
+                        const hasErrors = data.posts.some(post => post.error);
+                        
+                        if (hasErrors) {
+                            // Показываем ошибки
+                            let postsHtml = '<div class="posts-list">';
+                            data.posts.forEach((post, index) => {
+                                if (post.error) {
+                                    postsHtml += `
+                                        <div class="post-item mb-3 p-2 border rounded bg-danger bg-opacity-10">
+                                            <h6 class="text-danger">Ошибка #${index + 1}</h6>
+                                            <p class="text-danger mb-0">${post.error}</p>
+                                        </div>
+                                    `;
+                                } else {
+                                    const truncatedContent = post.content ? (post.content.length > 200 ? post.content.substring(0, 200) + '...' : post.content) : '';
+                                    postsHtml += `
+                                        <div class="post-item mb-3 p-2 border rounded bg-white">
+                                            <h6>Пост #${index + 1}</h6>
+                                            <p class="mb-1">${truncatedContent || 'Без текста'}</p>
+                                            ${post.media && post.media.length > 0 ? `<img src="${post.media[0]}" class="img-thumbnail" style="max-height: 100px;" alt="Media">` : ''}
+                                        </div>
+                                    `;
+                                }
+                            });
+                            postsHtml += '</div>';
+                            postsPreview.innerHTML = postsHtml;
+                        } else {
+                            // Нет ошибок - показываем посты
+                            let postsHtml = '<div class="posts-list">';
+                            data.posts.forEach((post, index) => {
+                                const truncatedContent = post.content ? (post.content.length > 200 ? post.content.substring(0, 200) + '...' : post.content) : '';
+                                postsHtml += `
+                                    <div class="post-item mb-3 p-2 border rounded bg-white">
+                                        <h6>Пост #${index + 1}</h6>
+                                        <p class="mb-1">${truncatedContent || 'Без текста'}</p>
+                                        ${post.media && post.media.length > 0 ? `<img src="${post.media[0]}" class="img-thumbnail" style="max-height: 100px;" alt="Media">` : ''}
+                                    </div>
+                                `;
+                            });
+                            postsHtml += '</div>';
+                            postsPreview.innerHTML = postsHtml;
+                        }
                     } else {
                         postsPreview.innerHTML = '<p class="text-muted mb-0">Посты не найдены или произошла ошибка</p>';
                     }

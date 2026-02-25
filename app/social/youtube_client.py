@@ -73,3 +73,45 @@ class YouTubeClient:
             error_message = str(e) if str(e) != "None" else "Неизвестная ошибка при загрузке видео в YouTube"
             print(f"Error uploading YouTube short: {error_message}")
             return {"error": error_message}
+
+    def validate_token(self) -> Dict:
+        """Проверить валидность API ключа YouTube"""
+        try:
+            # Пытаемся получить информацию о канале
+            request = self.youtube.channels().list(part='snippet,contentDetails', mine=True)
+            response = request.execute()
+            
+            if response.get('items'):
+                channel = response['items'][0]
+                return {
+                    "valid": True,
+                    "channel_id": channel['id'],
+                    "channel_title": channel['snippet']['title'],
+                    "message": "API ключ валиден"
+                }
+            else:
+                return {
+                    "valid": False,
+                    "error": "Канал не найден",
+                    "message": "Не удалось найти канал для этого API ключа"
+                }
+        except Exception as e:
+            error_message = str(e)
+            if "403" in error_message:
+                return {
+                    "valid": False,
+                    "error": "Доступ запрещён",
+                    "message": "API ключ не имеет доступа к YouTube Data API"
+                }
+            elif "401" in error_message:
+                return {
+                    "valid": False,
+                    "error": "Недействительный API ключ",
+                    "message": "API ключ неверен"
+                }
+            else:
+                return {
+                    "valid": False,
+                    "error": "Ошибка проверки API ключа",
+                    "message": error_message
+                }
