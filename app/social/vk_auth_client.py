@@ -8,7 +8,7 @@ from urllib.parse import urlparse, parse_qs
 
 class VKAuthClient:
     """
-    Модуль для получения токена доступа к ВКонтакте по логину и паролю
+    Модуль для получения токена доступа к ВКонтакте
     """
     
     def __init__(self):
@@ -76,11 +76,20 @@ class VKAuthClient:
                 'message': 'Для авторизации требуется ввести код двухфакторной аутентификации'
             }
         except Exception as e:
-            return {
-                'success': False,
-                'error': 'Ошибка получения токена',
-                'message': str(e)
-            }
+            error_str = str(e)
+            # Проверяем, содержит ли ошибка специфическое сообщение "no sid"
+            if 'no sid' in error_str.lower() or ('auth' in error_str.lower() and 'sid' in error_str.lower()):
+                return {
+                    'success': False,
+                    'error': 'Ошибка получения токена: AUTH; no sid',
+                    'message': 'Не удалось получить SID для аутентификации. Это может быть связано с ограничениями безопасности ВКонтакте. Пожалуйста, используйте альтернативный метод получения токена или проверьте учетные данные.'
+                }
+            else:
+                return {
+                    'success': False,
+                    'error': 'Ошибка получения токена',
+                    'message': str(e)
+                }
     
     def validate_token(self, token: str) -> Dict:
         """

@@ -3,7 +3,7 @@ from datetime import datetime, timedelta
 from typing import Dict, Optional
 from sqlalchemy.orm import Session
 from app.models.social_account import SocialAccount as SocialAccountModel
-from app.social.vk_auth_client import VKAuthClient
+from app.social.vk_auth_client import VKAuthClient, get_token_via_oauth
 from app.database import SessionLocal
 
 
@@ -61,8 +61,8 @@ class VKTokenService:
                     'message': 'Нет сохраненных учетных данных для обновления токена'
                 }
             
-            # Получаем новый токен
-            new_token_result = self.auth_client.get_access_token(login, password)
+            # Получаем новый токен через альтернативный метод
+            new_token_result = get_token_via_oauth(login, password)
             
             if new_token_result['success']:
                 # Обновляем токен в базе данных
