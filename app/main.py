@@ -11,6 +11,7 @@ from app.api.main import api_router
 from app.core.config import settings
 from app.models.social_account import SocialAccount as SocialAccountModel
 from app.models.database import get_db
+from app.services.vk_token_service import vk_token_service
 
 app = FastAPI(
     title="CrossPoster API",
@@ -56,10 +57,17 @@ async def accounts_page(request: Request, db: Session = Depends(get_db)):
 @app.get("/settings")
 async def settings_page(request: Request):
     return templates.TemplateResponse("settings.html", {"request": request})
-
 @app.get("/health")
 async def health_check():
     return {"status": "ok"}
+
+# Запуск фоновой задачи проверки токенов ВКонтакте при старте приложения
+@app.on_event("startup")
+async def startup_event():
+    import asyncio
+    # Запускаем фоновую проверку токенов ВКонтакте
+    asyncio.create_task(vk_token_service._check_tokens_periodically())
+
 
 if __name__ == "__main__":
     uvicorn.run(app, host="0.0.0.0", port=8000)

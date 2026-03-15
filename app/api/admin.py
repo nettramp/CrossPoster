@@ -23,6 +23,7 @@ from app.social.telegram_client import TelegramClient
 from app.social.instagram_client import InstagramClient
 from app.social.pinterest_client import PinterestClient
 from app.social.youtube_client import YouTubeClient
+from app.social.vk_auth_client import VKAuthClient
 from app.tasks.monitoring import repost_to_telegram, repost_to_vk, send_test_post_to_all_platforms
 
 router = APIRouter(prefix="/admin", tags=["admin"])
@@ -71,6 +72,37 @@ def get_or_create_default_user(db):
         db.commit()
         db.refresh(user)
     return user
+
+@router.post("/social-accounts/vk/token")
+def get_vk_token(credentials: dict):
+    """
+    Получить токен доступа к ВКонтакте по логину и паролю
+    """
+    try:
+        login = credentials.get('login')
+        password = credentials.get('password')
+        
+        if not login or not password:
+            raise HTTPException(status_code=400, detail="Логин и пароль обязательны для получения токена")
+        
+        # Используем наш новый модуль для получения токена
+        auth_client = VKAuthClient()
+        result = auth_client.get_access_token(login, password)
+        
+        if result.get('success'):
+            return {
+                'access_token': result['access_token'],
+                'user_id': result.get('user_id'),
+                'first_name': result.get('first_name'),
+                'last_name': result.get('last_name'),
+                'message': result.get('message')
+            }
+        else:
+            raise HTTPException(status_code=400, detail=result.get('message'))
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Ошибка при получении токена: {str(e)}")
 
 @router.post("/posts/test")
 async def send_test_post(

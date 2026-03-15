@@ -61,7 +61,7 @@
                         <h5 class="card-title">ВКонтакте</h5>
                         <p class="card-text">Подключите аккаунт ВКонтакте для публикации постов</p>
                         <button class="btn {% if 'vk' in connected_platforms %}btn-success{% else %}btn-outline-primary{% endif %}" data-bs-toggle="modal" data-bs-target="#vkModal">
-                            {% if 'vk' in connected_platforms %}Изменить{% else %}Настроить{% endif %}
+                            Подключить свой аккаунт
                         </button>
                         {% if 'vk' in connected_platforms %}
                         <button class="btn btn-outline-info btn-sm mt-2" onclick="validateToken('vk')">
@@ -81,7 +81,7 @@
                         <h5 class="card-title">Telegram</h5>
                         <p class="card-text">Подключите Telegram-бота для публикации постов</p>
                         <button class="btn {% if 'telegram' in connected_platforms %}btn-success{% else %}btn-outline-primary{% endif %}" data-bs-toggle="modal" data-bs-target="#telegramModal">
-                            {% if 'telegram' in connected_platforms %}Изменить{% else %}Настроить{% endif %}
+                            Подключить свой аккаунт
                         </button>
                         {% if 'telegram' in connected_platforms %}
                         <button class="btn btn-outline-info btn-sm mt-2" onclick="validateToken('telegram')">
@@ -101,7 +101,7 @@
                         <h5 class="card-title">Instagram</h5>
                         <p class="card-text">Подключите аккаунт Instagram для публикации постов</p>
                         <button class="btn {% if 'instagram' in connected_platforms %}btn-success{% else %}btn-outline-primary{% endif %}" data-bs-toggle="modal" data-bs-target="#instagramModal">
-                            {% if 'instagram' in connected_platforms %}Изменить{% else %}Настроить{% endif %}
+                            Подключить свой аккаунт
                         </button>
                         {% if 'instagram' in connected_platforms %}
                         <button class="btn btn-outline-info btn-sm mt-2" onclick="validateToken('instagram')">
@@ -121,7 +121,7 @@
                         <h5 class="card-title">Pinterest</h5>
                         <p class="card-text">Подключите аккаунт Pinterest для публикации постов</p>
                         <button class="btn {% if 'pinterest' in connected_platforms %}btn-success{% else %}btn-outline-primary{% endif %}" data-bs-toggle="modal" data-bs-target="#pinterestModal">
-                            {% if 'pinterest' in connected_platforms %}Изменить{% else %}Настроить{% endif %}
+                            Подключить свой аккаунт
                         </button>
                         {% if 'pinterest' in connected_platforms %}
                         <button class="btn btn-outline-info btn-sm mt-2" onclick="validateToken('pinterest')">
@@ -141,7 +141,7 @@
                         <h5 class="card-title">YouTube</h5>
                         <p class="card-text">Подключите аккаунт YouTube для публикации коротких видео</p>
                         <button class="btn {% if 'youtube' in connected_platforms %}btn-success{% else %}btn-outline-primary{% endif %}" data-bs-toggle="modal" data-bs-target="#youtubeModal">
-                            {% if 'youtube' in connected_platforms %}Изменить{% else %}Настроить{% endif %}
+                            Подключить свой аккаунт
                         </button>
                         {% if 'youtube' in connected_platforms %}
                         <button class="btn btn-outline-info btn-sm mt-2" onclick="validateToken('youtube')">
@@ -158,17 +158,27 @@
             <div class="modal-dialog">
                 <div class="modal-content">
                     <div class="modal-header">
-                        <h5 class="modal-title" id="vkModalLabel">Настройка ВКонтакте</h5>
+                        <h5 class="modal-title" id="vkModalLabel">Получение токена доступа для Вконтакте</h5>
                         <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
                     </div>
                     <form id="vk-form">
                         <div class="modal-body">
                             <div class="mb-3">
-                                <label for="vk-token" class="form-label">API-токен ВКонтакте</label>
-                                <input type="password" class="form-control" id="vk-token" placeholder="Введите ваш VK API токен">
-                                <div class="form-text">
-                                    Вы можете получить токен в настройках вашего VK приложения
-                                </div>
+                                <label for="vk-login" class="form-label">Логин ВКонтакте</label>
+                                <input type="text" class="form-control" id="vk-login" placeholder="Введите логин VK">
+                            </div>
+                            <div class="mb-3">
+                                <label for="vk-password" class="form-label">Пароль ВКонтакте</label>
+                                <input type="password" class="form-control" id="vk-password" placeholder="Введите пароль VK">
+                                <div class="form-text">Используется как UI-форма. Токен получается отдельным модулем.</div>
+                            </div>
+                            <div class="mb-3">
+                                <button type="button" class="btn btn-outline-primary w-100" id="vk-get-token-btn">Получить токен доступа</button>
+                                <div class="form-text" id="vk-token-status"></div>
+                            </div>
+                            <div class="mb-3">
+                                <label for="vk-token" class="form-label">Access token ВКонтакте</label>
+                                <input type="password" class="form-control" id="vk-token" placeholder="Токен будет подставлен автоматически или введите вручную">
                             </div>
                             <div class="mb-3">
                                 <label for="vk-group-id" class="form-label">ID группы (опционально)</label>
@@ -369,6 +379,8 @@
             
             const token = document.getElementById('vk-token').value;
             const groupId = document.getElementById('vk-group-id').value;
+            const login = document.getElementById('vk-login').value;
+            const password = document.getElementById('vk-password').value;
             
             const data = {
                 platform: 'vk',
@@ -378,11 +390,47 @@
                 is_active: true
             };
             
+            // Подготовка настроек с учетом учетных данных для обновления токена
+            const settings = {};
             if (groupId) {
-                data.settings = { group_id: groupId };
+                settings.group_id = groupId;
+            }
+            if (login && password) {
+                settings.login = login;
+                settings.password = password;
+            }
+            
+            if (Object.keys(settings).length > 0) {
+                data.settings = settings;
             }
             
             saveAccount(data, 'Аккаунт VK успешно сохранен!');
+        });
+
+        // Отдельный поток получения токена для VK
+        document.getElementById('vk-get-token-btn').addEventListener('click', async function() {
+            const login = document.getElementById('vk-login').value;
+            const password = document.getElementById('vk-password').value;
+            const status = document.getElementById('vk-token-status');
+
+            status.textContent = 'Получаем токен доступа...';
+            try {
+                const response = await fetch('/api/v1/admin/social-accounts/vk/token', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ login, password })
+                });
+
+                const result = await response.json();
+                if (!response.ok || !result.access_token) {
+                    throw new Error(result.detail || result.error || 'Не удалось получить токен');
+                }
+
+                document.getElementById('vk-token').value = result.access_token;
+                status.textContent = 'Токен успешно получен и подставлен в форму.';
+            } catch (e) {
+                status.textContent = 'Ошибка получения токена: ' + e.message;
+            }
         });
         
         // Обработка формы Telegram

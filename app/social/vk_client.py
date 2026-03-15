@@ -21,16 +21,24 @@ class VKClient:
     def validate_token(self) -> Dict:
         """Проверить валидность токена VK"""
         try:
-            # Получаем информацию о пользователе
-            profile_info = self.vk.account.getProfileInfo()
-            return {
-                "valid": True,
-                "user_id": profile_info.get("id"),
-                "first_name": profile_info.get("first_name"),
-                "last_name": profile_info.get("last_name"),
-                "screen_name": profile_info.get("screen_name"),
-                "message": "Токен валиден"
-            }
+            # Получаем информацию о пользователе через users.get (более надежный метод)
+            user_info = self.vk.users.get()
+            if user_info and len(user_info) > 0:
+                user = user_info[0]
+                return {
+                    "valid": True,
+                    "user_id": user.get("id"),
+                    "first_name": user.get("first_name"),
+                    "last_name": user.get("last_name"),
+                    "screen_name": user.get("screen_name", ""),
+                    "message": "Токен валиден"
+                }
+            else:
+                return {
+                    "valid": False,
+                    "error": "Пользователь не найден",
+                    "message": "Не удалось получить информацию о пользователе"
+                }
         except vk_api.exceptions.VkApiError as e:
             error_code = e.code if hasattr(e, 'code') else None
             error_msg = str(e)
@@ -46,6 +54,12 @@ class VKClient:
                     "valid": False,
                     "error": "Доступ запрещён",
                     "message": "Нет доступа к профилю"
+                }
+            elif error_code == 28:
+                return {
+                    "valid": False,
+                    "error": "Неверный запрос (код 28)",
+                    "message": "Метод account.getProfileInfo устарел. Используйте users.get"
                 }
             else:
                 return {

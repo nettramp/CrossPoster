@@ -1,10 +1,12 @@
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
 from typing import List
+import json
 
 from app.models.database import get_db
 from app.models.social_account import SocialAccount as SocialAccountModel
 from app.schemas.social_account import SocialAccountCreate, SocialAccountUpdate, SocialAccountPublic
+from app.services.vk_token_service import vk_token_service
 
 router = APIRouter(
     prefix="/social-accounts",
@@ -22,6 +24,20 @@ def create_social_account(account: SocialAccountCreate, db: Session = Depends(ge
         user_id=account.user_id or 1,  # по умолчанию первый пользователь
         settings=account.settings
     )
+    
+    # Если это аккаунт ВКонтакте, проверяем токен и при необходимости запускаем отслеживание
+    if account.platform == 'vk':
+        # Добавляем проверку токена при создании аккаунта
+        validation_result = vk_token_service.validate_and_refresh_token(db_account)
+        
+        # Если были переданы учетные данные для обновления токена, сохраняем их
+        if account.settings and 'login' in account.settings and 'password' in account.settings:
+            # Убедимся, что в настройках есть учетные данные для обновления токена
+            if not db_account.settings:
+                db_account.settings = {}
+            db_account.settings['login'] = account.settings['login']
+            db_account.settings['password'] = account.settings['password']
+    
     db.add(db_account)
     db.commit()
     db.refresh(db_account)
@@ -48,6 +64,16 @@ def update_social_account(account_id: int, account: SocialAccountUpdate, db: Ses
     for key, value in account.dict().items():
         if key != 'id':  # не обновляем ID
             setattr(db_account, key, value)
+    
+    # Если это аккаунт ВКонтакте, проверяем токен и при необходимости запускаем отслеживание
+    if db_account.platform == 'vk':
+        # Если были переданы учетные данные для обновления токена, сохраняем их
+        if account.settings and 'login' in account.settings and 'password' in account.settings:
+            # Убедимся, что в настройках есть учетные данные для обновления токена
+            if not db_account.settings:
+                db_account.settings = {}
+            db_account.settings['login'] = account.settings['login']
+            db_account.settings['password'] = account.settings['password']
     
     db.commit()
     db.refresh(db_account)
